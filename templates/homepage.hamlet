@@ -1,8 +1,4 @@
 
-<div>
-  $maybe (Member name _ _) <- submission
-    <div .message>
-      Tervetuloa saunomaan #{name}.
-  <form method=post action=@{HomeR}#form enctype=#{formEnctype}>
-    ^{formWidget}
-    <input type="submit" value="Liity jäseneksi">
+<h1>Saunakerho (insert correct name)
+
+(Yhdistyksen esittelyä)

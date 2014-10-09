@@ -1,3 +1,22 @@
-$maybe msg <- mmsg
-    <div #message>#{msg}
-^{widget}
+<div.container>
+  <header>
+    <div.navbar>
+      <div.navbar-inner>
+        <a.brand href=@{HomeR}>Saunakerho
+        <ul.nav>
+          <li>
+            <a href=@{HomeR}>Etusivu
+          <li>
+            <a href=@{ActivitiesR}>Toiminta
+          <!-- <li>
+            <a href="#">Kuvagalleria
+            -->
+          <li>
+            <a href=@{MembersR}>Jäsenet ja liittyminen
+
+  <div #main role="main">
+    $maybe msg <- mmsg
+      <div #message>#{msg}
+    ^{widget}
+  <footer #footer>
+    #{extraCopyright $ appExtra $ settings master}

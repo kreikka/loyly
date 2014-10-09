@@ -1,0 +1,24 @@
+
+<h1>Jäsenet ja liittyminen
+
+Yhdistys on tarkoitettu ensisijaisesti Helsingin yliopiston opiskelijoille,
+mutta periaatteessa kuka vain voidaan hyväksyä jäseneksi.  Uusien jäsenten
+hyväksymisestä päättää hallitus.
+
+Yhdistykseen liittyminen tapahtuu alta löytyvällä lomakkeella. Liitythän myös
+kanavallemme (TODO: #watchannel@watnet?)!
+
+<h2>Liittymislomake
+
+$case result
+  $of FormSuccess memb
+    <div .alert .alert-success>
+      Tervetuloa saunomaan, #{memberName memb}!
+  $of FormFailure _
+    <div .alert .alert-error>
+      Hups... jotain meni pieleen!
+  $of FormMissing
+
+<form.form method=post enctype=#{formEnctype}>
+  ^{formWidget}
+  <input .btn type="submit" value="Liity jäseneksi">
