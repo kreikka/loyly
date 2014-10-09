@@ -2,6 +2,8 @@ Member
     name Text
     homecity Text
     email Text
+    birthdate Day
+    biologicalGender Bool -- True is male, False female
     UniqueMember email
 
 -- use some user db for administration?
