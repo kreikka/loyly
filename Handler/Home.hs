@@ -40,5 +40,5 @@ memberForm = renderDivs $ Member
     <*> areq textField "Kotikunta" Nothing
     <*> areq emailField "Sähköposti" Nothing
     <*> areq dayField "Syntymäaika" Nothing
-    <*> areq boolField "Sukupuoli" (Just True)
+    <*> areq boolField "Minulla on penis" (Just True)
 
