@@ -2,6 +2,7 @@ Member
     name Text
     homecity Text
     email Text
+    hyyMember Bool        -- Is member of hyy
     birthdate Day
     biologicalGender Bool -- True is male, False female
     UniqueMember email

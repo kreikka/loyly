@@ -39,6 +39,7 @@ memberForm = renderDivs $ Member
     <$> areq textField "Koko nimi" Nothing
     <*> areq textField "Kotikunta" Nothing
     <*> areq emailField "Sähköposti" Nothing
+    <*> areq checkBoxField "Olen HYY:n jäsen" Nothing
     <*> areq dayField "Syntymäaika" Nothing
-    <*> areq boolField "Minulla on penis" (Just True)
+    <*> areq boolField "Minulla on penis" Nothing
 
