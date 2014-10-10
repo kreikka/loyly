@@ -35,7 +35,7 @@ getActivitiesR = do
         $(widgetFile "activities")
 
 memberForm :: Form Member
-memberForm = renderDivs $ Member
+memberForm = renderBootstrap2 $ Member
     <$> areq textField "Koko nimi" Nothing
     <*> areq textField "Kotikunta" Nothing
     <*> areq emailField "Sähköposti" Nothing
