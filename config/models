@@ -4,7 +4,7 @@ Member
     email Text
     hyyMember Bool        -- Is member of hyy
     birthdate Day
-    biologicalGender Bool -- True is male, False female
+    biologicalGender Bool Maybe -- True is male, False female
     UniqueMember email
 
 -- use some user db for administration?

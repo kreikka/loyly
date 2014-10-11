@@ -41,5 +41,7 @@ memberForm = renderBootstrap2 $ Member
     <*> areq emailField "Sähköposti" Nothing
     <*> areq checkBoxField "Olen HYY:n jäsen" Nothing
     <*> areq dayField "Syntymäaika" Nothing
-    <*> areq boolField "Minulla on penis" Nothing
-
+    <*> areq (radioFieldList genderSelections) "Sukupuoli" Nothing
+  where 
+      genderSelections :: [(Text, Maybe Bool)]
+      genderSelections = [("Mies", Just True), ("Nainen", Just False), ("Muu", Nothing)]
