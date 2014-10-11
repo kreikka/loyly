@@ -13,6 +13,8 @@
             -->
           <li>
             <a href=@{MembersR}>Jäsenet ja liittyminen
+          <li>
+            <a href=@{PrivacyPolicyR}>Tietosuojaseloste
 
   <div #main role="main">
     $maybe msg <- mmsg

@@ -7,3 +7,4 @@
 /              HomeR       GET
 /members       MembersR    GET POST
 /activities    ActivitiesR GET
+/privacy-policy PrivacyPolicyR GET

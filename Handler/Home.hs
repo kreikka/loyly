@@ -34,6 +34,12 @@ getActivitiesR = do
         setTitle "Toiminta"
         $(widgetFile "activities")
 
+getPrivacyPolicyR :: Handler Html
+getPrivacyPolicyR =
+    defaultLayout $ do
+        setTitle "Tietosuojaseloste"
+        $(widgetFile "privacy-policy")
+
 memberForm :: Form Member
 memberForm = renderBootstrap2 $ Member
     <$> areq textField "Koko nimi" Nothing
