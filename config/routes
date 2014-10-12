@@ -4,6 +4,8 @@
 /favicon.ico FaviconR GET
 /robots.txt RobotsR GET
 
-/              HomeR       GET
-/members       MembersR    GET POST
-/activities    ActivitiesR GET
+/              HomeR          GET
+/members       MembersR       GET POST
+/activities    ActivitiesR    GET
+/association   AssociationR   GET
+/gallery       GalleryR       GET

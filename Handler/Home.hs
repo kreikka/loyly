@@ -7,7 +7,6 @@ import Import
 homeTitle :: MonadWidget m => m ()
 homeTitle = setTitle "Akateeminen saunakerho Löyly ry"
 
-
 getHomeR :: Handler Html
 getHomeR =
     defaultLayout $ do
@@ -27,6 +26,18 @@ postMembersR = do
     defaultLayout $ do
         setTitle "Jäsenet ja liittyminen"
         $(widgetFile "members")
+
+getAssociationR :: Handler Html
+getAssociationR = do
+    defaultLayout $ do
+        setTitle "Yhdistys"
+        $(widgetFile "association")
+
+getGalleryR :: Handler Html
+getGalleryR = do
+    defaultLayout $ do
+        setTitle "Galleria"
+        $(widgetFile "gallery")
 
 getActivitiesR :: Handler Html
 getActivitiesR = do

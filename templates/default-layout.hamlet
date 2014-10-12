@@ -1,18 +1,20 @@
 <div.container>
-  <header>
-    <div.navbar>
-      <div.navbar-inner>
-        <a.brand href=@{HomeR}>Saunakerho
-        <ul.nav>
-          <li>
-            <a href=@{HomeR}>Etusivu
-          <li>
-            <a href=@{ActivitiesR}>Toiminta
-          <!-- <li>
-            <a href="#">Kuvagalleria
-            -->
-          <li>
-            <a href=@{MembersR}>Jäsenet ja liittyminen
+  <header #navbar>
+    <div.brand.gamma.hug href=@{HomeR}>
+      Helsingin<br>
+      Akateemiset<br>
+      Löylyttelijät&nbsp;ry
+    <ul.nav>
+      <li>
+        <a href=@{HomeR}>Etusivu
+      <li>
+        <a href=@{ActivitiesR}>Toiminta
+      <li>
+        <a href=@{GalleryR}>Galleria
+      <li>
+        <a href=@{AssociationR}>Yhdistys
+      <li>
+        <a href=@{MembersR}>Jäsenet ja liittyminen
 
   <div #main role="main">
     $maybe msg <- mmsg

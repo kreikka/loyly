@@ -1,12 +1,14 @@
 
 <h1>Jäsenet ja liittyminen
 
-Yhdistys on tarkoitettu ensisijaisesti Helsingin yliopiston opiskelijoille,
-mutta periaatteessa kuka vain voidaan hyväksyä jäseneksi.  Uusien jäsenten
-hyväksymisestä päättää hallitus.
+<p>
+  Yhdistys on tarkoitettu ensisijaisesti Helsingin yliopiston opiskelijoille,
+  mutta periaatteessa kuka vain voidaan hyväksyä jäseneksi.  Uusien jäsenten
+  hyväksymisestä päättää hallitus.
 
-Yhdistykseen liittyminen tapahtuu alta löytyvällä lomakkeella. Liitythän myös
-kanavallemme #saunahali @IRCnet !
+<p>
+  Yhdistykseen liittyminen tapahtuu alta löytyvällä lomakkeella. Liitythän myös
+  kanavallemme #saunahali @IRCnet !
 
 <h2>Liittymislomake
 
@@ -21,4 +23,5 @@ $case result
 
 <form.form method=post enctype=#{formEnctype}>
   ^{formWidget}
-  <input .btn type="submit" value="Liity jäseneksi">
+  <div .form-actions>
+    <input .btn type="submit" value="Liity jäseneksi">
