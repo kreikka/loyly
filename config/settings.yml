@@ -15,5 +15,6 @@ Staging:
   <<: *defaults
 
 Production:
-  #approot: "http://www.example.com"
+  approot: "http://saunahali.funktionaali.com"
+  port: 8500
   <<: *defaults

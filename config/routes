@@ -9,3 +9,4 @@
 /activities    ActivitiesR    GET
 /association   AssociationR   GET
 /gallery       GalleryR       GET
+/privacy-policy PrivacyPolicyR GET

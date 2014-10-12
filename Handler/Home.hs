@@ -45,6 +45,12 @@ getActivitiesR = do
         setTitle "Toiminta"
         $(widgetFile "activities")
 
+getPrivacyPolicyR :: Handler Html
+getPrivacyPolicyR =
+    defaultLayout $ do
+        setTitle "Tietosuojaseloste"
+        $(widgetFile "privacy-policy")
+
 memberForm :: Form Member
 memberForm = renderBootstrap2 $ Member
     <$> areq textField "Koko nimi" Nothing
@@ -52,5 +58,7 @@ memberForm = renderBootstrap2 $ Member
     <*> areq emailField "Sähköposti" Nothing
     <*> areq checkBoxField "Olen HYY:n jäsen" Nothing
     <*> areq dayField "Syntymäaika" Nothing
-    <*> areq boolField "Minulla on penis" Nothing
-
+    <*> areq (radioFieldList genderSelections) "Sukupuoli" Nothing
+  where 
+      genderSelections :: [(Text, Maybe Bool)]
+      genderSelections = [("Mies", Just True), ("Nainen", Just False), ("Muu", Nothing)]
