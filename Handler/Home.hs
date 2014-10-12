@@ -62,3 +62,18 @@ memberForm = renderBootstrap2 $ Member
   where 
       genderSelections :: [(Text, Maybe Bool)]
       genderSelections = [("Mies", Just True), ("Nainen", Just False), ("Muu", Nothing)]
+
+memberStatistics :: Widget
+memberStatistics = do
+    membs' <- handlerToWidget $ runDB $ selectList [] []
+
+    let membs             = map entityVal membs'
+        total             = length membs
+        hyy               = length $ filter memberHyyMember membs
+        hyyP | total == 0 = 0
+             | otherwise  = floor (100 * fromIntegral hyy / fromIntegral total :: Double) :: Int
+
+    [whamlet|
+Jäseniä #{total}, joista HYYläisiä #{hyy} (#{hyyP}%).
+|]
+
