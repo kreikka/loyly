@@ -3,8 +3,18 @@
 html {
   /* Change default typefaces here */
   font-family: sans-serif;
-  font-size: 137.5%;
+  font-size: 100%;
   -webkit-font-smoothing: antialiased;
+}
+@media (min-width:75em) {
+   html {
+      font-size: 117%;
+   }
+}
+@media (min-width:90em) {
+   html {
+      font-size:137.5%;
+   }
 }
 /* Copy & Lists */
 p {

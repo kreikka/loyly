@@ -1,6 +1,9 @@
 *, *:before, *:after {
   box-sizing:border-box;
 }
+.clearfix {
+  overflow:auto;
+}
 body {
    background:whitesmoke;
 }
@@ -10,6 +13,14 @@ body {
 }
 #main {
    margin-left:17em;
+}
+#footer {
+  clear:both;
+  width:100%;
+  margin-top:3em;
+  border-top:1px solid silver;
+  padding:1em 0.5em;
+  color:gray;
 }
 
 /* {{{ #navbar */
@@ -31,37 +42,76 @@ body {
 
     li {
       text-align:right;
+      margin-top:0.5em;
     }
     a {
-      color: rgb(111,111,111);
+      display:inline-block;
+      width:100%;
+      height:100%;
+      padding-right:0.5em;
       text-decoration:none;
+      color: rgb(111,111,111);
+      border-right: 2px solid brown;
     }
     a:hover {
-      text-decoration:underline;
+      color: rgb(102,28,28);
+      background: rgba(165, 42, 42, 0.2);
+      transition: background-color .5s ease-out;
     }
   }
 }
 /* }}} */
 
+/* {{{ Forms */
+.form {
+  min-width:30em;
+  max-width:45em;
+  margin-right:1em;
+}
 .form .control-group {
   margin-top:1em;
+}
+.control-label {
+  float:left;
+}
+.form .controls {
+  margin-left:14em;
+  padding:1px; /* input[type=date] fix? */
+}
+input[type*=text],
+input[type*=email] {
+  width:100%;
+}
+input {
+  border-color:rgba(165, 42, 42, 0.14);
+  padding:0.1em 0.3em;
 }
 .form .control-group.required .control-label:after {
   content:' *';
   color:red;
 }
+.form .radio div {
+  margin:0.4em 0 0 0.3em;
+}
+.form .radio input {
+  margin-right:0.3em;
+}
 .form-actions {
   border-top:1px solid gray;
   background:rgba(121,39,0,0.1);
   margin-top:1em;
-  padding:1em;
+  padding:1em 0.5em 1em 15em;
 }
-  
+/* }}}  */
 
-#footer {
-  clear:both;
-  width:100%;
-  margin-top:1em;
-  border-top:1px solid gray;
-  padding:1em 0.5em;
+/* {{{ Buttons */
+.btn {
+  padding:0.5em 0.8em;
+  color:whitesmoke;
+  background:rgb(66,179,66);
+  border:none;
 }
+.btn:hover {
+  box-shadow:inset 0 0 4px 1px rgba(0,0,0,0.3);
+}
+/* }}} */

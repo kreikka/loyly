@@ -17,4 +17,5 @@ Staging:
 Production:
   approot: "http://saunahali.funktionaali.com"
   port: 8500
+  copyright: Helsingin Akateemisen Löylyttelijät ry
   <<: *defaults

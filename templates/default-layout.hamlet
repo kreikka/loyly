@@ -23,4 +23,4 @@
       <div #message>#{msg}
     ^{widget}
   <footer #footer>
-    #{extraCopyright $ appExtra $ settings master}
+    &copy #{extraCopyright $ appExtra $ settings master}
