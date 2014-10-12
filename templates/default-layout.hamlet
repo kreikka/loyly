@@ -6,17 +6,17 @@
       Löylyttelijät&nbsp;ry
     <ul.nav>
       <li>
-        <a href=@{HomeR}>Etusivu
+        <a :route == Just HomeR:.active href=@{HomeR}>Etusivu
       <li>
-        <a href=@{ActivitiesR}>Toiminta
+        <a :route == Just ActivitiesR:.active href=@{ActivitiesR}>Toiminta
       <li>
-        <a href=@{GalleryR}>Galleria
+        <a :route == Just GalleryR:.active href=@{GalleryR}>Galleria
       <li>
-        <a href=@{AssociationR}>Yhdistys
+        <a :route == Just AssociationR:.active href=@{AssociationR}>Yhdistys
       <li>
-        <a href=@{MembersR}>Jäsenet ja liittyminen
+        <a :route == Just MembersR:.active href=@{MembersR}>Jäsenet ja liittyminen
       <li>
-        <a href=@{PrivacyPolicyR}>Tietosuojaseloste
+        <a :route == Just PrivacyPolicyR:.active href=@{PrivacyPolicyR}>Tietosuojaseloste
 
   <div #main role="main">
     $maybe msg <- mmsg

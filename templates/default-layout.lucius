@@ -53,7 +53,7 @@ body {
       color: rgb(111,111,111);
       border-right: 2px solid brown;
     }
-    a:hover {
+    a:hover, a.active {
       color: rgb(102,28,28);
       background: rgba(165, 42, 42, 0.2);
       transition: background-color .5s ease-out;
@@ -79,10 +79,11 @@ body {
   padding:1px; /* input[type=date] fix? */
 }
 input[type*=text],
-input[type*=email] {
+input[type*=email],
+textarea {
   width:100%;
 }
-input {
+input, textarea {
   border-color:rgba(165, 42, 42, 0.14);
   padding:0.1em 0.3em;
 }

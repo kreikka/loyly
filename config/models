@@ -1,10 +1,13 @@
 Member
+    approved Bool
     name Text
     homecity Text
     email Text
     hyyMember Bool        -- Is member of hyy
     birthdate Day
     biologicalGender Bool Maybe -- True is male, False female
+    recruitedBy Text
+    desc Text Maybe
     UniqueMember email
 
 -- use some user db for administration?
