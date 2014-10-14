@@ -59,7 +59,7 @@ memberForm = renderBootstrap2 $ Member False
     <*> areq checkBoxField "Olen HYY:n jäsen" Nothing
     <*> areq dayField "Syntymäaika" Nothing
     <*> areq (radioFieldList genderSelections) "Sukupuoli" Nothing
-    <*> areq textField "miten sait tietää meistä?" Nothing
+    <*> areq textField "Miten sait tietää meistä?" Nothing
     <*> (fmap (fmap unTextarea)) (aopt textareaField "Löylyprofiilisi" Nothing)
   where 
       genderSelections :: [(Text, Maybe Bool)]
