@@ -16,13 +16,9 @@
 <h2>Liittymislomake
 
 $case result
-  $of FormSuccess memb
-    <div .alert .alert-success>
-      Tervetuloa saunomaan, #{memberName memb}!
   $of FormFailure _
-    <div .alert .alert-error>
-      Hups... jotain meni pieleen!
-  $of FormMissing
+    <div .alert .alert-error>Hups... jotain meni pieleen!
+  $of _
 
 <form.form method=post enctype=#{formEnctype}>
   ^{formWidget}

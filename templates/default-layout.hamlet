@@ -20,7 +20,7 @@
 
   <div #main role="main">
     $maybe msg <- mmsg
-      <div #message>#{msg}
+      <div .alert .alert-success #message>#{msg}
     ^{widget}
   <footer #footer>
     &copy #{extraCopyright $ appExtra $ settings master}

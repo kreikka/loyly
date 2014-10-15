@@ -19,8 +19,10 @@ postMembersR = do
     ((result, formWidget), formEnctype) <- runFormPost memberForm
 
     case result of
-        FormSuccess res -> do _ <- runDB $ insert res
-                              return ()
+        FormSuccess res -> do
+            _ <- runDB $ insert res
+            setMessage $ toHtml $ "Tervetuloa saunomaan, " <> memberName res
+            redirect MembersR
         _ -> return ()
 
     defaultLayout $ do
