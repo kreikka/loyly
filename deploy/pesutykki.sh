@@ -1,5 +1,7 @@
 #!/usr/bin/bash
 set -o errexit -o xtrace -o nounset
+# WARNING: missing permission setup
+# assuming db and static/tmp permissions are already configured
 
 DESTINATION=/opt/saunahali/
 

@@ -19,15 +19,16 @@
     <b> Henkilötietojen käsittelyn tarkoitus
     <p>
       Rekisterin tarkoitus on yhdistyslain mukaisen jäsenrekisterin pitäminen nimen ja
-      kotikunnan osalta. Muita tietoja käytetään
+      kotikunnan osalta. Muita tietoja käytetään tilastointiin ja
       uusien jäsenten liittymisen kontrollointiin tilastollisin perustein.
+      Sähköpostia käytetään tarvittaessa yhteydenpitoon.
   <li>
     <b> Rekisterin tietosisältö
     <p>
       Rekisteriin tallennetaan henkilön nimi, kotikunta, sähköposti, HYY jäsenyys,
       syntymäaika, sukupuoli, liityntäpäivämäärä sekä käyttäjän muut syöttämät tiedot sivulla
-      <a href=@{MembersR}> Jäsenet ja liittyminen\
-      #.
+      <a href=@{MembersR}> Jäsenet ja liittyminen#
+      \.
   <li>
     <b> Säännönmukaiset tietolähteet
     <p>
@@ -36,11 +37,11 @@
   <li>
     <b> Tietojen säännönmukaiset luovutukset
     <p>
-      Rekisterin sisältämiä tietoja ei luovuteta ulkopuolisille
+      Rekisterin sisältämiä tietoja ei luovuteta ulkopuolisille.
   <li>
     <b> Tietojen siirto EU:n tai ETA:n ulkopuolelle
     <p>
-      Tietoja ei siirretä EU:n tai ETA:n ulkopuolelle
+      Tietoja ei siirretä EU:n tai ETA:n ulkopuolelle.
   <li>
     <b> Rekisterin suojauksen periaatteet
     <p>
