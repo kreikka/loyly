@@ -10,8 +10,7 @@
     <p>
       Tuomas Kinnunen <br>
       Fastbölentie 16, 00750 HELSINKI <br>
-      TK009@IRCnet <br>
-      [TODO: sposti]
+      TK009@IRCnet
   <li>
     <b> Rekisterin nimi
     <p>
@@ -21,15 +20,14 @@
     <p>
       Rekisterin tarkoitus on yhdistyslain mukaisen jäsenrekisterin pitäminen nimen ja
       kotikunnan osalta. Muita tietoja käytetään
-      uusien jäsenten liittymisen kontrollointiin tilastollisin
-      perustein. <br>
-      [TODO: mihin sähköpostia tarvitaan]
+      uusien jäsenten liittymisen kontrollointiin tilastollisin perustein.
   <li>
     <b> Rekisterin tietosisältö
     <p>
       Rekisteriin tallennetaan henkilön nimi, kotikunta, sähköposti, HYY jäsenyys,
-      syntymäaika ja sukupuoli. <br>
-      [TODO: liityntäpvm]
+      syntymäaika, sukupuoli, liityntäpäivämäärä sekä käyttäjän muut syöttämät tiedot sivulla
+      <a href=@{MembersR}> Jäsenet ja liittyminen\
+      #.
   <li>
     <b> Säännönmukaiset tietolähteet
     <p>
