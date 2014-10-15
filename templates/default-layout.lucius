@@ -20,6 +20,15 @@ body {
   color:gray;
 }
 
+.alert {
+  padding:1em 1.5em;
+  margin:0.5em 0;
+}
+.alert-success {
+  background:rgba(113, 230, 113, 0.73);
+  border:1px solid rgb(0, 150, 0);
+}
+
 /* {{{ #navbar */
 #navbar {
   .brand {
