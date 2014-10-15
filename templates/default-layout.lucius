@@ -120,6 +120,10 @@ input, textarea {
   margin-top:1em;
   padding:1em 0.5em 1em 15em;
 }
+.error .help-block {
+  color:red;
+  font-size:90%;
+}
 /* }}}  */
 
 /* {{{ Buttons */

@@ -57,15 +57,20 @@ memberForm :: Form Member
 memberForm = renderBootstrap2 $ Member False
     <$> areq textField "Koko nimi" Nothing
     <*> areq textField "Kotikunta" Nothing
-    <*> areq emailField "Sähköposti" Nothing
+    <*> areq (checkM mailNotTaken emailField) "Sähköposti" Nothing
     <*> areq checkBoxField "Olen HYY:n jäsen" Nothing
     <*> areq dayField "Syntymäaika" Nothing
     <*> areq (radioFieldList genderSelections) "Sukupuoli" Nothing
     <*> areq textField "Miten sait tietää meistä?" Nothing
     <*> (fmap (fmap unTextarea)) (aopt textareaField "Löylyprofiilisi" Nothing)
-  where 
+  where
       genderSelections :: [(Text, Maybe Bool)]
       genderSelections = [("Mies", Just True), ("Nainen", Just False), ("Muu", Nothing)]
+
+      mailNotTaken :: Text -> Handler (Either Text Text)
+      mailNotTaken mail =
+          maybe (Right mail) (\_ -> Left ("Sähköpostillasi on jo liitytty" :: Text))
+          <$> (runDB $ getBy $ UniqueMember mail)
 
 memberStatistics :: Widget
 memberStatistics = do
