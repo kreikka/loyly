@@ -98,7 +98,7 @@ memberStatistics = do
     [whamlet|
 Jäseniä #{total}, joista HYYläisiä #{hyy} (#{hyyP}%).
 $if not $ null membsNotAppr
-    Lisäksi jäseneksi hyväksymistä odottaa #{length membsNotAppr}.
+    \ Lisäksi jäseneksi hyväksymistä odottaa #{length membsNotAppr} hakemusta.
 |]
 
 
@@ -119,7 +119,6 @@ postBlogR = do
                 else setMessage "Wäärä salasana"
         _ -> return ()
 
-    posts <- runDB $ selectList [] [Asc BlogPostIdent]
     defaultLayout $ do
         setTitle "Saunablogi"
         $(widgetFile "blog-home")
@@ -129,7 +128,7 @@ handleBlogPost (fi, overwrite, editor, _) = do
     markdown <- fmap (Markdown . decodeUtf8 . B.toStrict . B.toLazyByteString) $ fileSource fi $$ CL.foldMap B.byteString
 
     let doc@(Pandoc meta _) = parseMarkdown yesodDefaultReaderOptions markdown
-        rendered   = writePandoc yesodDefaultWriterOptions doc
+        rendered   = writePandocTrusted yesodDefaultWriterOptions doc
         tags       = maybe [] getTags $ lookupMeta "tags" meta
         title      = T.pack $ concatMap inlineToString (docTitle meta)
         authors    = map (T.pack . concatMap inlineToString) (docAuthors meta)
@@ -147,23 +146,33 @@ handleBlogPost (fi, overwrite, editor, _) = do
                                   redirect $ BlogPostR ident
             Just (Entity k v)
                 | overwrite -> do runDB (replace k v { blogPostTitle    = title
-                                                     , blogPostTags     = tags
                                                      , blogPostAuthors  = authors
+                                                     , blogPostTags     = tags
                                                      , blogPostLog      = blogPostLog v ++ [(time, editor)]
+                                                     , blogPostMarkdown = markdown
                                                      , blogPostRendered = rendered
                                                      })
-                                  setMessage "Postaus päivitetty; merkitse ruksi jos haluat päivittää postausta."
+                                  setMessage "Postaus päivitetty."
                                   redirect $ BlogPostR ident
                 | otherwise -> return ()
 
 getBlogPostR :: Text -> Handler Html
 getBlogPostR ident = do
     Entity _ BlogPost{..} <- runDB $ getBy404 $ UniqueBlogPost ident
-    let doc = parseMarkdown yesodDefaultReaderOptions blogPostMarkdown
-        content             = writePandocTrusted yesodDefaultWriterOptions doc
     defaultLayout $ do
         setTitle $ toHtml blogPostTitle
         $(widgetFile "blog-post")
+
+recentBlogPosts :: Maybe Int -> Widget
+recentBlogPosts mn = do
+    posts <- handlerToWidget $ runDB $
+        selectList [] ((Desc BlogPostLog) : maybe [] (return . LimitTo) mn)
+    [whamlet|
+<ul>
+  $forall Entity _ post <- posts
+    <li>
+      <a href=@{BlogPostR (blogPostIdent post)}>#{blogPostTitle post}
+|]
 
 -- * Misc.
 

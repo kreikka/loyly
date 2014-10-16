@@ -1,11 +1,6 @@
 <h1>Saunablogi
 
-<ul>
-  $forall Entity _ post <- posts
-    <li>
-      <a href=@{BlogPostR (blogPostIdent post)}>#{blogPostTitle post}
-
-<hr>
+^{recentBlogPosts Nothing}
 
 <h2>Lisää postaus
 
