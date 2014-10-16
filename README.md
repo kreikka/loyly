@@ -13,3 +13,12 @@ Important paths:
 * config/models: database models
 * Handler/: page logic
 
+blog file format
+----------------
+
+    ---
+    author: Teh Author
+    title: An example post
+    date: 2014-10-16T11:43:29+0300
+    tags: one tag, another tag, a third tag
+    ---

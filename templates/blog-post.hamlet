@@ -3,4 +3,4 @@
 <div.light>
   Laatija(t): <i>#{T.intercalate ", " blogPostAuthors}</i>
 
-#{content}
+#{blogPostRendered}
