@@ -9,16 +9,26 @@ USER=saunahali
 # scripts directory
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}"  )" && pwd  )"
 
-
-
 # Build
 
 cd $DIR/../
 
-if [[ $1 != "--fast" ]]
-    then cabal clean
+# prevent memory problems in pesutykki by not compiling devel server at the same time
+killall yesod -KILL || true
+
+if [[ $* == "--fast" ]]
+then
+    cabal build
+elif [[ $* == "--slow" ]] # Use less memory and cpu
+then
+    touch Settings/StaticFiles.hs
+    cabal clean
+    cabal build -j1
+else
+    touch Settings/StaticFiles.hs
+    cabal clean
+    cabal build
 fi
-cabal build
 
 
 
