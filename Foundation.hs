@@ -1,6 +1,7 @@
 module Foundation where
 
 import Prelude
+import Data.Text (Text)
 import Yesod
 import Yesod.Static
 import Yesod.Auth

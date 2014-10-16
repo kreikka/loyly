@@ -68,6 +68,8 @@ library
                  , fast-logger                   >= 2.2        && < 2.3
                  , wai-logger                    >= 2.2        && < 2.3
                  , time                          >= 1.4        && < 1.5
+                 , pandoc                        >= 1.6        && < 2.0
+                 , yesod-markdown                >= 0.9        && < 1.0
 
     -- see https://github.com/yesodweb/yesod/issues/814
     if !os(windows)

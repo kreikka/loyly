@@ -3,6 +3,7 @@ Default: &defaults
   port: 3000
   approot: "http://localhost:3000"
   copyright: copyright statement - TEST INSTANCE
+  blog_password: saunahali
   #analytics: UA-YOURCODE
 
 Development:

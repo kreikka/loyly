@@ -10,6 +10,8 @@
       <li>
         <a :route == Just ActivitiesR:.active href=@{ActivitiesR}>Toiminta
       <li>
+        <a :route == Just ActivitiesR:.active href=@{BlogR}>Saunablogi
+      <li>
         <a :route == Just GalleryR:.active href=@{GalleryR}>Galleria
       <li>
         <a :route == Just AssociationR:.active href=@{AssociationR}>Yhdistys

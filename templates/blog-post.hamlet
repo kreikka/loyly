@@ -1,0 +1,6 @@
+
+<h1>#{blogPostTitle}
+<div.light>
+  Laatija(t): <i>#{T.intercalate ", " blogPostAuthors}</i>
+
+#{content}

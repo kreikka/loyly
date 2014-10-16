@@ -1,0 +1,15 @@
+<h1>Saunablogi
+
+<ul>
+  $forall Entity _ post <- posts
+    <li>
+      <a href=@{BlogPostR (blogPostIdent post)}>#{blogPostTitle post}
+
+<hr>
+
+<h2>Lisää postaus
+
+<form.form method=POST enctype=#{enctype}>
+  ^{widget}
+  <div.form-actions>
+    <input.btn type="submit" value="Postaa">
