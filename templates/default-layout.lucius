@@ -148,3 +148,15 @@ input, textarea {
 .light {
   color:rgb(111,111,111);
 }
+.img-full {
+  width:100%;
+}
+
+.images {
+  display:flex;
+  flex-flow: row wrap;
+  justify-content: space-around;
+}
+.images img {
+  margin:0.5em 0.2em;
+}

@@ -118,6 +118,10 @@ instance Yesod App where
 
     makeLogger = return . appLogger
 
+    maximumContentLength _ (Just GalleryR)   = Just (32 * 1024 * 1024)
+    maximumContentLength _ (Just (AlbumR _)) = Just (32 * 1024 * 1024)
+    maximumContentLength _ _                 = Just (2 * 1024 * 1024)
+
 -- How to run database actions.
 instance YesodPersist App where
     type YesodPersistBackend App = SqlBackend

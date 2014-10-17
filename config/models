@@ -26,3 +26,19 @@ BlogPost
     markdown Markdown
     rendered Html
     UniqueBlogPost ident
+
+Album
+    date UTCTime
+    ident Text
+    title Text
+    UniqueAlbum ident
+
+Image
+    date UTCTime
+    album AlbumId
+    nth Int
+    title Text
+    contentType ContentType
+    file FilePath
+    fileExt String
+    UniqueImage album nth

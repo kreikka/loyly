@@ -1,0 +1,10 @@
+
+<h1>#{albumTitle}
+
+<p>#{show albumDate}
+<br>
+^{flexImagesWidget images}
+
+<h2>Päivitä
+
+^{uploadWidget $ Just album}

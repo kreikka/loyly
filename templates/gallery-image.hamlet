@@ -1,0 +1,5 @@
+<h1>#{albumTitle}/#{nth}
+
+<p>
+<a href=@{ImageR aid nth}>
+  <img.img-full src=@{ImageR aid nth}>

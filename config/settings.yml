@@ -4,6 +4,7 @@ Default: &defaults
   approot: "http://localhost:3000"
   copyright: copyright statement - TEST INSTANCE
   blog_password: saunahali
+  gallery_root: "/tmp/images/"
   #analytics: UA-YOURCODE
 
 Development:

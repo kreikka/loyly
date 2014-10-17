@@ -4,11 +4,16 @@
 /favicon.ico FaviconR GET
 /robots.txt RobotsR GET
 
-/                 HomeR          GET
-/members          MembersR       GET POST
-/activities       ActivitiesR    GET
-/association      AssociationR   GET
-/gallery          GalleryR       GET
-/privacy-policy   PrivacyPolicyR GET
-/blog             BlogR          GET POST
-/blog/#Text       BlogPostR      GET
+/                    HomeR          GET
+/members             MembersR       GET POST
+/activities          ActivitiesR    GET
+/association         AssociationR   GET
+/privacy-policy      PrivacyPolicyR GET
+/blog                BlogR          GET POST
+/blog/#Text          BlogPostR      GET
+
+/gallery             GalleryR       GET POST
+/gallery/#AlbumId/#Int ImageViewR  GET
+/album/#Text         AlbumR         GET POST
+/image/#AlbumId/#Int ImageR         GET
+/thumb/#AlbumId/#Int ThumbR         GET
