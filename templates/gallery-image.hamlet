@@ -1,5 +1,6 @@
 <h1>#{albumTitle}/#{nth}
 
-<p>
-<a href=@{ImageR aid nth}>
-  <img.img-full src=@{ImageR aid nth}>
+<p>Kuva: #{imageAuthor} (#{show imageDate})
+
+<a href=@{ImageR albumAuthor albumIdent nth}>
+  <img.img-full src=@{ImageR albumAuthor albumIdent nth}>

@@ -12,8 +12,8 @@
 /blog                BlogR          GET POST
 /blog/#Text          BlogPostR      GET
 
-/gallery             GalleryR       GET POST
-/gallery/#AlbumId/#Int ImageViewR  GET
-/album/#Text         AlbumR         GET POST
-/image/#AlbumId/#Int ImageR         GET
-/thumb/#AlbumId/#Int ThumbR         GET
+/gallery                  GalleryR       GET POST
+/gallery/#Text/#Text      AlbumR         GET POST
+/gallery/#Text/#Text/#Int ImageViewR     GET
+/image/#Text/#Text/#Int   ImageR         GET
+/thumb/#Text/#Text/#Int   ThumbR         GET

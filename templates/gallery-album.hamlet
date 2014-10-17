@@ -1,10 +1,10 @@
 
 <h1>#{albumTitle}
 
-<p>#{show albumDate}
+<p>Laatija: #{albumAuthor} (#{show albumDate})
 <br>
-^{flexImagesWidget images}
+^{flexImagesWidget albumAuthor albumIdent images}
 
-<h2>Päivitä
+<h2>Muokkaa tai lisää kuvia
 
 ^{uploadWidget $ Just album}

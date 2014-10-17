@@ -31,13 +31,15 @@ Album
     date UTCTime
     ident Text
     title Text
-    UniqueAlbum ident
+    author Text
+    UniqueAlbum author ident
 
 Image
     date UTCTime
     album AlbumId
     nth Int
     title Text
+    author Text
     contentType ContentType
     file FilePath
     fileExt String

@@ -1,12 +1,12 @@
 
 <h1>Galleria
   
-^{flexImagesWidget images}
+^{flexImagesWidget' images}
 
 <ul>
   $forall Entity _ Album{..} <- albums
     <li>
-      <a href=@{AlbumR albumIdent}>#{albumTitle}
+      <a href=@{AlbumR albumAuthor albumIdent}>#{albumTitle}
       \ (#{show albumDate})
 
 <h2>Uusi albumi

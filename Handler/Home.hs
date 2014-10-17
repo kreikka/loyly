@@ -1,4 +1,7 @@
 {-# LANGUAGE TupleSections, OverloadedStrings, RecordWildCards #-}
+#if !DEVELOPMENT
+{-# OPTIONS_GHC -fno-warn-unused-matches #-} -- RecordWildCards in widgets
+#endif
 module Handler.Home where
 
 import           Import
@@ -191,11 +194,11 @@ postGalleryR = do
         $(widgetFile "gallery-home")
 
 -- | View all imgs in a specific album.
-getAlbumR, postAlbumR :: Text -> Handler Html
-getAlbumR        = postAlbumR
-postAlbumR ident = do
+getAlbumR, postAlbumR :: Text -> Text -> Handler Html
+getAlbumR               = postAlbumR
+postAlbumR author ident = do
     (album@(Entity _ Album{..}), images) <- runDB $ do
-        album@(Entity aid _) <- getBy404 $ UniqueAlbum ident
+        album@(Entity aid _) <- getBy404 $ UniqueAlbum author ident
         imgs <- selectList [ImageAlbum ==. aid] [Asc ImageNth]
         return (album, imgs)
 
@@ -203,23 +206,23 @@ postAlbumR ident = do
         setTitle $ toHtml albumTitle
         $(widgetFile "gallery-album")
 
-getImageViewR :: AlbumId -> Int -> Handler Html
-getImageViewR aid nth = do
-    Album{..} <- runDB $ get404 aid
+getImageViewR :: Text -> Text -> Int -> Handler Html
+getImageViewR author ident nth = do
+    (Entity _ Album{..}, Entity _ Image{..}) <- getImage author ident nth
     defaultLayout $ do
         setTitle "An image"
         $(widgetFile "gallery-image")
 
-getImageR, getThumbR :: AlbumId -> Int -> Handler ()
+getImageR, getThumbR :: Text -> Text -> Int -> Handler ()
 getImageR = sendImageWith False
 getThumbR = sendImageWith True
 
 -- | Unoverloaded version of ThumbR/ImageR
-sendImageWith :: Bool -> Key Album -> Int -> Handler ()
+sendImageWith :: Bool -> Text -> Text -> Int -> Handler ()
 {-# INLINE sendImageWith #-}
-sendImageWith thumb aid nth = do
-    root               <- extraGalleryRoot <$> getExtra
-    Entity _ Image{..} <- runDB $ getBy404 $ UniqueImage aid nth
+sendImageWith thumb author ident nth = do
+    root                               <- extraGalleryRoot <$> getExtra
+    (Entity aid _, Entity _ Image{..}) <- getImage author ident nth
 
     let path = root </> show (fromSqlKey aid) </>
                 (if thumb then "thumbs" </> imageFile <.> ".jpg"
@@ -229,28 +232,29 @@ sendImageWith thumb aid nth = do
 
 uploadWidget :: Maybe (Entity Album) -> Widget
 uploadWidget malbum = do
-    ((result, widget), _) <- handlerToWidget $ runFormPost $ renderBootstrap2 $
-        (,) <$> areq textField "Albumin otsikko" (albumTitle . entityVal <$> malbum)
-            <*> areq passwordField "Salasana" Nothing
+    ((result, widget), _) <- handlerToWidget $ runFormPost $ renderBootstrap2 $ (,,)
+        <$> areq textField "Albumin otsikko" (albumTitle . entityVal <$> malbum)
+        <*> areq textField "Kuka olet" Nothing
+        <*> areq passwordField "Salasana" Nothing
 
     case result of
-        FormSuccess (title, pass) -> do
+        FormSuccess (title, author, pass) -> do
 
             handlerToWidget $ do
                 pass' <- extraBlogPass <$> getExtra
                 when (pass /= pass') $ do setMessage "Väärä salasana"
                                           redirect GalleryR
 
-            Entity aid Album{..} <- handlerToWidget $ createOrUpdateAlbum malbum title
-            nfiles <- lookupFiles "files" >>= handlerToWidget . saveFiles aid
+            Entity aid Album{..} <- handlerToWidget $ createOrUpdateAlbum author malbum title
+            nfiles <- lookupFiles "files" >>= handlerToWidget . saveFiles author aid
             setMessage $ toHtml $ show nfiles ++ " kuvaa lisätty."
-            redirect $ AlbumR albumIdent
+            redirect $ AlbumR albumAuthor albumIdent
 
         _ -> $(widgetFile "gallery-upload-form")
 
 -- | Save files. Return number of new images.
-saveFiles :: AlbumId -> [FileInfo] -> Handler Int
-saveFiles aid fs = do
+saveFiles :: Text -> AlbumId -> [FileInfo] -> Handler Int
+saveFiles author aid fs = do
     time  <- liftIO getCurrentTime
     album <- runDB $ selectFirst [ImageAlbum ==. aid] [Desc ImageNth]
     root  <- extraGalleryRoot <$> getExtra
@@ -265,9 +269,10 @@ saveFiles aid fs = do
     names <- forM (zip fs [n + 1 ..]) $ \(fi, nth) -> do
 
         let (name, ext) = (,) <$> F.takeBaseName <*> F.takeExtension $ (T.unpack $ fileName fi)
+            contentType = simpleContentType $ encodeUtf8 $ fileContentType fi
 
         liftIO $ do fileMove fi (dir </> name <.> ext)
-        _ <- runDB $ insert $ Image time aid nth (T.pack name) (simpleContentType $ encodeUtf8 $ fileContentType fi) name ext
+        _ <- runDB $ insert $ Image time aid nth (T.pack name) author contentType name ext
         return $ name <.> ext
 
     code <- liftIO $ generateThumbnails dir thumbDir names
@@ -288,23 +293,43 @@ generateThumbnails cwd thumbDir names = do
 -- Or update album title.
 --
 -- NOTE don't use @albumTitle@ returned here, it is not updated
-createOrUpdateAlbum :: Maybe (Entity Album) -> Text -> Handler (Entity Album)
-createOrUpdateAlbum (Just (Entity aid album)) title = do
+createOrUpdateAlbum :: Text -> Maybe (Entity Album) -> Text -> Handler (Entity Album)
+createOrUpdateAlbum author (Just (Entity aid album)) title = do
     runDB (update aid [AlbumTitle =. title])
     return $ Entity aid album
-createOrUpdateAlbum Nothing                   title = do
+createOrUpdateAlbum author Nothing                   title = do
     time      <- liftIO getCurrentTime
-    let album = Album time (toUrlIdent title) title
+    let album = Album time (toUrlIdent title) title author
     aid       <- runDB $ insert album
     return $ Entity aid album
 
-flexImagesWidget :: [Entity Image] -> Widget
-flexImagesWidget images = [whamlet|
+flexImagesWidget :: Text -> Text -> [Entity Image] -> Widget
+flexImagesWidget author ident images = [whamlet|
 <div .images>
   $forall Entity _ Image{..} <- images
-    <a href=@{ImageViewR imageAlbum imageNth}>
-      <img src=@{ThumbR imageAlbum imageNth} alt=#{imageTitle}>
+    <a href=@{ImageViewR author ident imageNth}>
+      <img src=@{ThumbR author ident imageNth} alt=#{imageTitle}>
 |]
+
+-- TODO: this does naive @mapM (get404 ...)@; should use a join instead
+-- (esqueleto).
+flexImagesWidget' :: [Entity Image] -> Widget
+flexImagesWidget' images = do
+    albums <- handlerToWidget $ runDB $ mapM (get404 . imageAlbum . entityVal) images
+    [whamlet|
+<div .images>
+  $forall (Entity _ Image{..}, Album{..}) <- zip images albums
+    <a href=@{ImageViewR albumAuthor albumIdent imageNth}>
+      <img src=@{ThumbR albumAuthor albumIdent imageNth} alt=#{imageTitle}>
+|]
+
+-- XXX: Could use a join here too
+getImage :: Text -> Text -> Int -> Handler (Entity Album, Entity Image)
+getImage author ident nth = runDB $ do
+    album@(Entity aid _) <- getBy404 $ UniqueAlbum author ident
+    image                <- getBy404 $ UniqueImage aid nth
+    return (album, image)
+
 
 -- * Misc.
 
