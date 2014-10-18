@@ -23,6 +23,7 @@ import qualified System.Directory
 import qualified System.Process as P
 import           System.Exit (ExitCode(..))
 import           Text.Pandoc hiding (Image)
+import           Text.Printf
 import           Database.Persist.Sql (fromSqlKey)
 import           Yesod.Markdown
 
@@ -225,7 +226,7 @@ sendImageWith thumb author ident nth = do
     (Entity aid _, Entity _ Image{..}) <- getImage author ident nth
 
     let path = root </> show (fromSqlKey aid) </>
-                (if thumb then "thumbs" </> imageFile <.> ".jpg"
+                (if thumb then thumbDir </> imageFile <.> ".jpg"
                           else imageFile <.> imageFileExt)
 
     sendFile (if thumb then typeJpeg else imageContentType) path
@@ -259,35 +260,34 @@ saveFiles author aid fs = do
     album <- runDB $ selectFirst [ImageAlbum ==. aid] [Desc ImageNth]
     root  <- extraGalleryRoot <$> getExtra
 
-    let dir      = root </> show (fromSqlKey aid)
-        thumbDir = dir </> "thumbs"
-        n        = maybe 0 (fromIntegral . fromSqlKey . entityKey) album
+    let albumRoot = root </> show (fromSqlKey aid)
+        imageN    = maybe 0 (fromIntegral . fromSqlKey . entityKey) album
 
-    liftIO $ do System.Directory.createDirectoryIfMissing True dir
-                System.Directory.createDirectoryIfMissing True thumbDir
+    liftIO $ System.Directory.createDirectoryIfMissing True (albumRoot </> thumbDir)
 
-    names <- forM (zip fs [n + 1 ..]) $ \(fi, nth) -> do
+    names <- forM (zip fs [imageN + 1 ..]) $ \(fi, nth) -> do
 
-        let (name, ext) = (,) <$> F.takeBaseName <*> F.takeExtension $ (T.unpack $ fileName fi)
+        let (base, ext) = (,) <$> F.takeBaseName <*> F.takeExtension $ (T.unpack $ fileName fi)
+            file        = printf "%03d" nth
             contentType = simpleContentType $ encodeUtf8 $ fileContentType fi
 
-        liftIO $ do fileMove fi (dir </> name <.> ext)
-        _ <- runDB $ insert $ Image time aid nth (T.pack name) author contentType name ext
-        return $ name <.> ext
+        liftIO $ fileMove fi (albumRoot </> file <.> ext)
+        _ <- runDB $ insert $ Image time aid nth (T.pack base) author contentType file ext
+        return (file <.> ext)
 
-    code <- liftIO $ generateThumbnails dir thumbDir names
+    code <- liftIO $ generateThumbnails albumRoot thumbDir names
     when (code /= ExitSuccess) $ do
         setMessage "Virhe: kuvat lisättiin, mutta peukalonkynsien generointi epäonnistui!"
         redirect HomeR
 
     return $ length fs
 
--- | @generateThumbnails cwd thumbDir names@
+-- | @generateThumbnails albumRoot thumbs_relative names@
 generateThumbnails :: FilePath -> FilePath -> [FilePath] -> IO ExitCode
-generateThumbnails cwd thumbDir names = do
+generateThumbnails albumRoot thumbs names = do
     (_,_,_,ph) <- P.createProcess
-        (P.proc "mogrify" $ ["-format", "jpg", "-thumbnail", "270x270", "-path", thumbDir] ++ names)
-        { P.cwd = Just cwd }
+        (P.proc "mogrify" $ ["-format", "jpg", "-thumbnail", "270x270", "-path", thumbs] ++ names)
+        { P.cwd = Just albumRoot }
     P.waitForProcess ph
 
 -- Or update album title.
@@ -332,6 +332,13 @@ getImage author ident nth = runDB $ do
 
 
 -- * Misc.
+
+-- | Relative to *album root*.
+thumbDir :: FilePath
+thumbDir = "thumbs"
+
+toImageFile :: Int -> String
+toImageFile = printf "%03d"
 
 inlineToString :: Inline -> String
 inlineToString x = case x of
