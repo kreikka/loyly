@@ -359,7 +359,7 @@ unMetaText _                = Nothing
 
 -- | space -> '-', punctuation removed
 toUrlIdent :: Text -> Text
-toUrlIdent = T.map f . T.filter (not . isPunctuation)
+toUrlIdent = T.map f . T.unwords . T.words . T.filter (not . isPunctuation)
   where
     f c | isSpace c = '-'
         | otherwise = toLower c
