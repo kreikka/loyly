@@ -1,9 +1,0 @@
-<form.form method=post enctype=#{Multipart}>
-    ^{widget}
-    <div.control-group required>
-        <label.control-label for=files>Kuvatiedostot
-        <div.controls input>
-            <input#files name=files type=file multiple>
-    <div.form-actions>
-        <input.btn type=submit value="Luo albumi">
-

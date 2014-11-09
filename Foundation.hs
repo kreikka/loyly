@@ -3,10 +3,13 @@ module Foundation where
 
 import Prelude
 import Data.Text (Text)
+import qualified Data.Text as T
 import Yesod
 import Yesod.Static
 import Yesod.Auth
 import Yesod.Auth.Account
+import qualified Yesod.Auth.Message as Msg
+import qualified Yesod.Auth.Account.Message as Msg
 import Yesod.Default.Config
 import Yesod.Default.Util (addStaticContentExternal)
 import Network.HTTP.Client.Conduit (Manager, HasHttpManager (getHttpManager))
@@ -131,15 +134,27 @@ instance YesodPersist App where
 instance YesodPersistRunner App where
     getDBRunner = defaultGetDBRunner connPool
 
+-- Auth
+
 instance YesodAuth App where
     type AuthId App = Username
     getAuthId = return . Just . credsIdent
     loginDest _ = HomeR
     logoutDest _ = HomeR
-    authPlugins _ = [accountPlugin]
     authHttpManager _ = error "No manager needed"
     onLogin = return ()
     maybeAuthId = lookupSession credsKey
+    renderAuthMessage _ _ = Msg.finnishMessage -- TODO i18n
+    authPlugins _ = [ accountPlugin { apLogin = \tm -> do
+        form <- liftHandlerT $ runFormPostNoToken $ renderBootstrap2 loginForm
+        [whamlet|
+<h1>Kirjaudu sisään
+^{renderForm form (tm loginFormPostTargetR) (submitI Msg.LoginTitle)}
+<p>
+  <a href=@{tm newAccountR}>_{Msg.RegisterLong}
+  <br>
+  <a href=@{tm resetPasswordR}>_{Msg.MsgForgotPassword}
+|] }]
 
 instance PersistUserCredentials User where
     userUsernameF = UserUsername
@@ -154,12 +169,62 @@ instance PersistUserCredentials User where
 
 instance YesodAuthAccount (AccountPersistDB App User) App where
     runAccountDB = runAccountPersistDB
+    renderAccountMessage _ _ = finnishAccountMsg -- TODO i18n
+
+    getNewAccountR = do
+        tm <- getRouteToParent
+        lift $ defaultLayout $ do
+            setTitleI Msg.RegisterLong
+            form <- liftHandlerT $ runFormPost $ renderBootstrap2 newAccountForm
+            [whamlet|
+<h1>_{Msg.RegisterLong}
+^{renderForm form (tm newAccountR) (submitI Msg.Register)}
+<p>
+    <a href=@{AuthR LoginR}>_{Msg.LoginTitle}
+|]
+
+    getResetPasswordR = do
+        tm <- getRouteToParent
+        lift $ defaultLayout $ do
+            setTitleI Msg.PasswordResetTitle
+            form <- liftHandlerT $ runFormPost $ renderBootstrap2 resetPasswordForm
+            [whamlet|
+<h1>_{Msg.PasswordResetTitle}
+^{renderForm form (tm resetPasswordR) (submitI Msg.SendPasswordResetEmail)}
+|]
+
+-- XXX: pull request to yesod-auth-account
+finnishAccountMsg :: Msg.AccountMsg -> T.Text
+finnishAccountMsg Msg.MsgUsername = "Käyttäjänimi"
+finnishAccountMsg Msg.MsgForgotPassword = "Unohditko salasanasi?"
+finnishAccountMsg Msg.MsgInvalidUsername = "Väärä käyttäjänimi"
+finnishAccountMsg (Msg.MsgUsernameExists u) = T.concat ["Käyttäjänimi ", u, " on jo käytössä.  Valitse jokin muu käyttäjänimi."]
+finnishAccountMsg Msg.MsgResendVerifyEmail = "Lähetä sähköpostivarmennus uudestaan."
+finnishAccountMsg Msg.MsgResetPwdEmailSent = "Salasanan palautusviesti on lähetetty sähköpostiisi."
+finnishAccountMsg Msg.MsgEmailVerified = "Sahköpostiosoitteesi on nyt varmistettu."
+finnishAccountMsg Msg.MsgEmailUnverified = "Sähköpostiosoitettasi ei ole vielä varmistettu."
 
 instance AccountSendEmail App where
     -- TODO Add email support
 
+isAuthRoute :: Maybe (Route App) -> Bool
+isAuthRoute (Just (AuthR _)) = True
+isAuthRoute _ = False
+
+-- Form, extra
+
 instance RenderMessage App FormMessage where
     renderMessage _ _ = defaultFormMessage
+
+submitI :: RenderMessage App a => a -> Widget
+submitI msg = [whamlet|<input .btn type=submit value=_{msg}>|]
+
+renderForm :: ((t, Widget), Enctype) -> Route App -> Widget -> Widget
+renderForm ((_, widget), enctype) action formActions = [whamlet|
+<form .form method=post enctype=#{enctype} action=@{action}>
+  ^{widget}
+  <div .form-actions>^{formActions}
+|]
 
 -- | Get the 'Extra' value, used to hold data from the settings.yml file.
 getExtra :: Handler Extra

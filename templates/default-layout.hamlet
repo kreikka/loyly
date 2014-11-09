@@ -21,10 +21,10 @@
         <a :route == Just PrivacyPolicyR:.active href=@{PrivacyPolicyR}>Tietosuojaseloste
       <li .bold>
         $maybe u <- maid
-          <a href=@{AuthR LogoutR}>Kirjaudu ulos
+          <a :isAuthRoute route:.active href=@{AuthR LogoutR}>Kirjaudu ulos
           (#{u})
         $nothing
-          <a href=@{AuthR LoginR}>Kirjaudu sisään
+          <a :isAuthRoute route:.active href=@{AuthR LoginR}>_{Msg.LoginTitle}
 
   <div #main role="main">
     $maybe msg <- mmsg

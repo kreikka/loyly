@@ -23,4 +23,4 @@ $case result
 <form.form method=post enctype=#{formEnctype}>
   ^{formWidget}
   <div .form-actions>
-    <input .btn type="submit" value="Liity jäseneksi">
+    <input .btn type=submit value=_{MsgJoinMember}>

@@ -114,7 +114,7 @@ $if not $ null membsNotAppr
 getBlogR, postBlogR :: Handler Html
 getBlogR = postBlogR
 postBlogR = do
-    ((res, widget), enctype) <- runFormPost $ renderBootstrap2 $ (,,,)
+    form@((res, _), _) <- runFormPost $ renderBootstrap2 $ (,,,)
         <$> fileAFormReq "Markdown-tiedosto"
         <*> areq checkBoxField "Päivitän postausta" Nothing
         <*> areq textField "Kuka olet" Nothing
@@ -252,7 +252,14 @@ uploadWidget malbum = do
             setMessage $ toHtml $ show nfiles ++ " kuvaa lisätty."
             redirect $ AlbumR albumAuthor albumIdent
 
-        _ -> $(widgetFile "gallery-upload-form")
+        _ -> renderForm ((result, widget >> filesWidget), Multipart) GalleryR (submitI MsgCreateNewAlbum)
+  where
+    filesWidget = [whamlet|
+<div.control-group required>
+    <label.control-label for=files>Kuvatiedostot
+    <div.controls input>
+        <input#files name=files type=file multiple>
+|]
 
 -- | Save files. Return number of new images.
 saveFiles :: Text -> AlbumId -> [FileInfo] -> Handler Int
