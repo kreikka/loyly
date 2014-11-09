@@ -237,19 +237,29 @@ postAlbumR author ident = do
 getImageViewR, postImageViewR :: Text -> Text -> Int -> Handler Html
 postImageViewR = getImageViewR
 getImageViewR author ident nth = do
-    img@(Entity _ Album{..}, Entity _ Image{..}, people) <- getImage author ident nth
-
-    allPeople <- fmap (map $ liftA2 (,) id id . userUsername . entityVal) $ runDB $ selectList [] [Asc UserUsername]
-    form@((res,_),_) <- runFormPost $ renderBootstrap2 $ imageEditForm allPeople img
-    case res of
-        FormSuccess newPeople -> do
-            undefined
-        _ -> return ()
-
     Just route <- getCurrentRoute
-    defaultLayout $ do
-        setTitle "An image"
-        $(widgetFile "gallery-image")
+    maid <- maybeAuthId
+
+    img@(Entity _ Album{..}, Entity iid Image{..}, people) <- getImage author ident nth
+
+    if isNothing maid && not imagePublic then notFound else do
+
+        allPeople <- fmap (map $ (,) <$> userUsername . entityVal <*> entityKey) $ runDB $ selectList [] [Asc UserUsername]
+
+        form@((res,_),_) <- runFormPost $ renderBootstrap2 $ imageEditForm allPeople img
+
+        case res of
+            FormSuccess (newPeople, newDesc) -> do
+                runDB $ do
+                    update iid [ImageDesc =. fromMaybe "" newDesc]
+                    deleteWhere [PersonInImageImg ==. iid, PersonInImageUser /<-. newPeople]
+                    mapM_ (\u -> insertUnique $ PersonInImage iid u Nothing) newPeople
+                redirect route
+            _ -> return ()
+
+        defaultLayout $ do
+            setTitle "An image"
+            $(widgetFile "gallery-image")
 
 getImageR, getThumbR :: Text -> Text -> Int -> Handler ()
 getImageR = sendImageWith False
@@ -268,8 +278,9 @@ sendImageWith thumb author ident nth = do
 
     sendFile (if thumb then typeJpeg else imageContentType) path
 
-imageEditForm allPeople (_,_,people) = 
-    areq (multiSelectFieldList allPeople) "Ihmiset kuvassa" (Just $ userUsername . entityVal <$> people)
+imageEditForm allPeople (_,Entity _ img, people) = (,)
+    <$> areq (multiSelectFieldList allPeople) "Ihmiset kuvassa" (Just $ entityKey <$> people)
+    <*> (fmap unTextarea <$> aopt textareaField "Meta" (Just . Just . Textarea $ imageDesc img))
 
 uploadWidget :: Maybe (Entity Album) -> Widget
 uploadWidget malbum = do
@@ -321,7 +332,7 @@ saveFiles author aid fs = do
             contentType = simpleContentType $ encodeUtf8 $ fileContentType fi
 
         liftIO $ fileMove fi (albumRoot </> file <.> ext)
-        _ <- runDB $ insert $ Image False time aid nth (T.pack base) author contentType file ext
+        _ <- runDB $ insert $ Image False "" time aid nth (T.pack base) author contentType file ext
         return (file <.> ext)
 
     code <- liftIO $ generateThumbnails albumRoot thumbDir names

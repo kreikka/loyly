@@ -42,6 +42,7 @@ Album
 
 Image
     public Bool default=1
+    desc Text default=''
     date UTCTime
     album AlbumId
     nth Int
@@ -56,3 +57,4 @@ PersonInImage
     img ImageId
     user UserId
     publishable Bool Maybe -- Nothing if not acked by user, or Just "can publish"
+    UniquePersonImage img user

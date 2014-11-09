@@ -1,20 +1,24 @@
 <h1>#{albumTitle}/#{nth}
 
 <p>
-  Kuvan lisäsi #{imageAuthor} (#{show imageDate}). #
+  Kuvan lisäsi <b>#{imageAuthor}</b> (#{show imageDate}). #
   $if imagePublic
-    Kuva on <b>julkinen</b>.
+    Kuva on <b>julkinen</b>. #
   $else
-    Kuva on <b>yksityinen</b>.
+    Kuva on <b>yksityinen</b>. #
 
   $if not $ null people
-    Ihmiset kuvassa:
+    Ihmiset kuvassa: #
     $forall Entity _ u <- people
-      <a href=@{PublicProfileR (userUsername u)}>#{userUsername u}
+      <a href=@{PublicProfileR (userUsername u)}>#{userUsername u} #
 
 <a href=@{ImageR albumAuthor albumIdent nth}>
   <img.img-full src=@{ImageR albumAuthor albumIdent nth}>
 
-<h2>Muokkaa kuvan tietoja
+<blockquote>#{imageDesc}
 
-^{renderForm form route (submitI MsgUpdateImageInfo)}
+$if maid == Just imageAuthor
+  <h2>Muokkaa kuvan tietoja
+  ^{renderForm form route (submitI MsgUpdateImageInfo)}
+$else
+  <i>Vain kuvan lisääjä, #{imageAuthor}, voi muokata tämän kuvan tietoja.
