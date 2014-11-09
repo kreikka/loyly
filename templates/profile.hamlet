@@ -1,18 +1,7 @@
 <h1>Profiili: #{u}
 
 $if not $ null ackImages
-  <form style="margin-top:1em" method=post enctype=#{enctype} action=@{ImagePublishAckR}>
-    <fieldset>
-      <legend>
-        Hyväksymistä odottavat galleriakuvat
-      <small>
-        Anna julkaisuoikeudet niille kuville, jotka haluat <b>julkiseen webbiin</b>.
-        Jos et anna kuvalle julkaisuoikeutta, on se edelleen nähtävissä yksityisenä.
-        Ota yhteys kuvan lisääjään jos haluat kuvan poistettavan.
-      <p>
-        <button .btn onclick="toggle_all_radio()">Julkaise kaikki
-      ^{ackWidget}
-    <div .form-actions>^{submitI MsgImagePublishAck}
+  ^{ackImageForm form}
 
 <h2>Jäsentiedot
 <p>

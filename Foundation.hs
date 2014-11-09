@@ -148,8 +148,9 @@ instance YesodAuth App where
     renderAuthMessage _ _ = Msg.finnishMessage -- TODO i18n
     authPlugins _ = [ accountPlugin { apLogin = \tm -> do
         form <- liftHandlerT $ runFormPostNoToken $ renderBootstrap2 loginForm
-        renderForm Msg.LoginTitle form (tm loginFormPostTargetR) (submitI Msg.LoginTitle)
         [whamlet|
+<div.toppush>
+^{renderForm Msg.LoginTitle form (tm loginFormPostTargetR) (submitI Msg.LoginTitle)}
 <p>
   <a href=@{tm newAccountR}>_{Msg.RegisterLong}
   <br>
@@ -176,8 +177,9 @@ instance YesodAuthAccount (AccountPersistDB App User) App where
         lift $ defaultLayout $ do
             setTitleI Msg.RegisterLong
             form <- liftHandlerT $ runFormPost $ renderBootstrap2 newAccountForm
-            renderForm Msg.RegisterLong form (tm newAccountR) (submitI Msg.Register)
             [whamlet|
+<div.toppush>
+^{renderForm Msg.RegisterLong form (tm newAccountR) (submitI Msg.Register)}
 <p>
   <a href=@{AuthR LoginR}>_{Msg.LoginTitle}
 |]
@@ -187,13 +189,17 @@ instance YesodAuthAccount (AccountPersistDB App User) App where
         lift $ defaultLayout $ do
             setTitleI Msg.PasswordResetTitle
             form <- liftHandlerT $ runFormPost $ renderBootstrap2 resetPasswordForm
+            [whamlet|<div.toppush>|]
             renderForm Msg.PasswordResetTitle form (tm resetPasswordR) (submitI Msg.SendPasswordResetEmail)
 
     unregisteredLogin u = do
         tm <- getRouteToParent
         lift $ defaultLayout $ do
             setTitleI Msg.MsgEmailUnverified
-            [whamlet|<div .alert .alert-error>Kirjautuminen epäonnistui|] -- TODO i18n
+            [whamlet|
+<div .toppush>
+<div .alert .alert-error>Kirjautuminen epäonnistui
+|] -- TODO i18n
             form <- liftHandlerT $ runFormPost $ renderBootstrap2 $ resendVerifyEmailForm (username u)
             renderForm Msg.MsgEmailUnverified form (tm resendVerifyR) (submitI Msg.MsgResendVerifyEmail)
 

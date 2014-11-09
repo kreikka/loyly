@@ -10,7 +10,8 @@ import qualified Data.ByteString.Builder as B
 import           Data.Conduit
 import qualified Data.Conduit.List as CL
 import           Data.Char (toLower, isSpace, isPunctuation)
-import qualified Data.Text  as T
+import qualified Data.List as L
+import qualified Data.Text as T
 import           Data.Text.Encoding
 import           Data.Time
 
@@ -196,13 +197,10 @@ getProfileR = do
     Entity uid user <- runDB $ getBy404 $ UniqueUsername u
     mmemb <- runDB $ getBy $ UniqueMember $ userEmail user
     passForm <- runFormPost $ renderBootstrap2 $ newPasswordForm u (userResetPasswordKey user)
-    (((_, ackWidget), enctype), ackImages) <- runImagePublishAckForm uid
+    form@(_, ackImages) <- runImagePublishAckForm uid
     defaultLayout $ do
         setTitle "Löylyprofiili"
         $(widgetFile "profile")
-
-postImagePublishAckR :: Handler Html
-postImagePublishAckR = getProfileR -- XXX: is this always sensible?
 
 getPublicProfileR :: Text -> Handler Html
 getPublicProfileR u = do
@@ -225,6 +223,11 @@ postGalleryR = do
     imageFilters <- imageAccessFilters
     albums <- runDB $ selectList albumFilters [Desc AlbumDate]
     images <- runDB $ selectList imageFilters [Desc ImageDate, LimitTo 8]
+    numImages <- runDB $ count ([] :: [Filter Image])
+    numPrivate <- runDB $ count [ImagePublic ==. False]
+    numPrivatePending <- runDB $ do
+        pii <- selectList [PersonInImagePublishable ==. Nothing] [Asc PersonInImageImg]
+        return $ length $ L.nub $ map (personInImageImg . entityVal) pii
     defaultLayout $ do
         setTitle "Galleria"
         $(widgetFile "gallery-home")
@@ -305,8 +308,7 @@ uploadWidget malbum = do
     maid <- handlerToWidget maybeAuthId
     ((result, widget), _) <- handlerToWidget $ runFormPost $ renderBootstrap2 $ (,,,)
         <$> areq textField "Albumin otsikko" (albumTitle . entityVal <$> malbum)
-        <*> maybe (areq textField "Kuka olet" Nothing)
-                  pure maid
+        <*> maybe (areq textField "Kuka olet" Nothing) pure maid
         <*> areq checkBoxField "Albumi on julkinen" (albumPublic . entityVal <$> malbum)
         <*> maybe (areq passwordField "Salasana" Nothing)
                   (const $ lift $ extraBlogPass <$> getExtra) maid
@@ -449,31 +451,45 @@ getImagePeople iid = do
 
 -- ** Access control
     
+-- | Also unpublishes if personInImages was updated.
 publishIfAcked :: ImageId -> Query ()
 publishIfAcked iid = do
     piis <- selectList [PersonInImageImg ==. iid] []
-    all ((== Just True) . personInImagePublishable . entityVal) piis
-        `when` update iid [ImagePublic =. True]
+    update iid $
+        if all ((== Just True) . personInImagePublishable . entityVal) piis
+            then [ImagePublic =. True]
+            else [ImagePublic =. False]
 
 -- | The result type looks like a monster, but actually it's just
 -- @(form_result, personInImages)@.
 runImagePublishAckForm :: UserId -> Handler (((FormResult [(PersonInImageId, Maybe Bool)], Widget), Enctype), [Entity PersonInImage])
 runImagePublishAckForm uid = do
-    let runForm = do
-            acks <- runDB $ selectList [ PersonInImageUser ==. uid, PersonInImagePublishable ==. Nothing]
-                                       [ Asc PersonInImageImg ]
-            form <- runFormPost $ renderBootstrap2 $ sequenceA $ map ackForm acks
-            return (form, acks)
-
-    x@(((res,_),_), piis) <- runForm
-    case res of
-        FormSuccess xs -> do runDB $ mapM_ (uncurry updatePublishable) xs
-                             runDB $ mapM_ (publishIfAcked . personInImageImg . entityVal) piis
-                             runForm
-        _ -> return x
+    acks <- runDB $ selectList [ PersonInImageUser ==. uid, PersonInImagePublishable ==. Nothing]
+                               [ Asc PersonInImageImg ]
+    form <- runFormPost $ renderBootstrap2 $ sequenceA $ map ackForm acks
+    return (form, acks)
   where
     ackForm (Entity k v) = (k, ) <$> aopt (ackField v) "" Nothing
     updatePublishable k status = update k [PersonInImagePublishable =. status]
+
+postImagePublishAckR :: Handler Html
+postImagePublishAckR = do
+    form@(((res,_),_),piis) <- runImagePublishAckForm . entityKey =<< runDB . getBy404 . UniqueUsername =<< requireAuthId
+    case res of
+        FormSuccess xs -> do runDB $ mapM_ (uncurry updatePublishable) xs
+                             runDB $ mapM_ (publishIfAcked . personInImageImg . entityVal) piis
+                             setMessage "Julkaisuoikeudet asetettu"
+                             redirect ProfileR
+        _ -> do
+            setMessage "Päivitys epäonnistui"
+            defaultLayout $ do
+                setTitle "Julkaisuoikeuksien päivitys"
+                ackImageForm form
+  where
+    updatePublishable k status = update k [PersonInImagePublishable =. status]
+
+ackImageForm :: (((FormResult [(PersonInImageId, Maybe Bool)], Widget), Enctype), [Entity PersonInImage]) -> Widget
+ackImageForm (((_, ackWidget), enctype), _) = $(widgetFile "ack-image-form")
 
 ackField :: PersonInImage -> Field Handler Bool
 ackField v = boolField' { fieldView = \theId name attrs val isReq -> [whamlet|
