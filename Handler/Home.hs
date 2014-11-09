@@ -215,16 +215,16 @@ getPublicProfileR u = do
 
 -- * Gallery
 
-type ImageInfo = (Entity Album, Entity Image, [(PersonInImage, Entity User)])
-
 -- ** Handlers
 
 -- | Some default view; recent imgs or smth
 getGalleryR, postGalleryR :: Handler Html
 getGalleryR  = postGalleryR
 postGalleryR = do
-    albums <- runDB $ selectList [] [Desc AlbumDate]
-    images <- runDB $ selectList [] [Desc ImageDate, LimitTo 5]
+    albumFilters <- albumAccessFilters
+    imageFilters <- imageAccessFilters
+    albums <- runDB $ selectList albumFilters [Desc AlbumDate]
+    images <- runDB $ selectList imageFilters [Desc ImageDate, LimitTo 8]
     defaultLayout $ do
         setTitle "Galleria"
         $(widgetFile "gallery-home")
@@ -233,10 +233,11 @@ postGalleryR = do
 getAlbumR, postAlbumR :: Text -> Text -> Handler Html
 getAlbumR               = postAlbumR
 postAlbumR author ident = do
-    (album@(Entity _ Album{..}), images) <- runDB $ do
-        album@(Entity aid _) <- getBy404 $ UniqueAlbum author ident
-        imgs <- selectList [ImageAlbum ==. aid] [Asc ImageNth]
-        return (album, imgs)
+    album@(Entity aid Album{..}) <- runDB $ getBy404 $ UniqueAlbum author ident
+    unless albumPublic (void requireAuthId)
+    filters <- imageAccessFilters
+
+    images <- runDB $ selectList ((ImageAlbum ==. aid) : filters) [Asc ImageNth]
 
     defaultLayout $ do
         setTitle $ toHtml albumTitle
@@ -278,9 +279,11 @@ getImageByIdR, getThumbByIdR :: ImageId -> Handler ()
 getImageByIdR = getImageById >=> sendImage False
 getThumbByIdR = getImageById >=> sendImage True
 
+-- | Handles access control too
 sendImage :: Bool -> ImageInfo -> Handler ()
 {-# INLINE sendImage #-}
 sendImage thumb (Entity aid _, Entity _ Image{..}, _) = do
+    unless imagePublic (void requireAuthId)
     root <- extraGalleryRoot <$> getExtra
     let path = root </> show (fromSqlKey aid) </>
                 (if thumb then thumbDir </> imageFile <.> ".jpg"
@@ -299,26 +302,41 @@ imageEditForm allPeople (_,Entity _ img, people) = (,)
 
 uploadWidget :: Maybe (Entity Album) -> Widget
 uploadWidget malbum = do
+    maid <- handlerToWidget maybeAuthId
     ((result, widget), _) <- handlerToWidget $ runFormPost $ renderBootstrap2 $ (,,,)
         <$> areq textField "Albumin otsikko" (albumTitle . entityVal <$> malbum)
-        <*> areq textField "Kuka olet" Nothing
-        <*> areq checkBoxField "Albumi on julkinen" Nothing
-        <*> areq passwordField "Salasana" Nothing
+        <*> maybe (areq textField "Kuka olet" Nothing)
+                  pure maid
+        <*> areq checkBoxField "Albumi on julkinen" (albumPublic . entityVal <$> malbum)
+        <*> maybe (areq passwordField "Salasana" Nothing)
+                  (const $ lift $ extraBlogPass <$> getExtra) maid
 
     case result of
         FormSuccess (title, author, public, pass) -> do
 
+            -- check pass and album uniqueness
             handlerToWidget $ do
                 pass' <- extraBlogPass <$> getExtra
                 when (pass /= pass') $ do setMessage "Väärä salasana"
                                           redirect GalleryR
 
+                when (isNothing malbum) $ do
+                    indb <- runDB $ getBy $ UniqueAlbum author title
+                    when (isJust indb) $ invalidArgs ["Sinulla on jo tämänniminen albumi."]
+
+            -- insert or update album
             Entity aid Album{..} <- handlerToWidget $ createOrUpdateAlbum author malbum title public
+
+            -- insert files
             nfiles <- lookupFiles "files" >>= handlerToWidget . saveFiles author aid
+
             setMessage $ toHtml $ show nfiles ++ " kuvaa lisätty."
             redirect $ AlbumR albumAuthor albumIdent
 
-        _ -> renderForm msg ((result, widget >> filesWidget), Multipart) GalleryR (submitI msg)
+        _ -> renderForm msg
+                ((result, widget >> filesWidget), Multipart)
+                (maybe GalleryR (AlbumR <$> albumAuthor . entityVal <*> albumTitle . entityVal) malbum)
+                (submitI msg)
   where
     msg = case malbum of
               Nothing -> MsgCreateNewAlbum
@@ -382,7 +400,7 @@ generateThumbnails albumRoot thumbs names = do
         { P.cwd = Just albumRoot }
     P.waitForProcess ph
 
--- ** View Images
+-- ** Render image view
 
 flexImagesWidget :: Text -> Text -> [Entity Image] -> Widget
 flexImagesWidget author ident images = [whamlet|
@@ -403,6 +421,10 @@ flexImagesWidget' images = do
     <a href=@{ImageViewR albumAuthor albumIdent imageNth}>
       <img src=@{ThumbR albumAuthor albumIdent imageNth} alt=#{imageTitle}>
 |]
+
+-- ** ImageInfo
+
+type ImageInfo = (Entity Album, Entity Image, [(PersonInImage, Entity User)])
 
 -- XXX: Could use a join here too
 getImage :: Text -> Text -> Int -> Handler ImageInfo
@@ -462,6 +484,20 @@ ackField v = boolField' { fieldView = \theId name attrs val isReq -> [whamlet|
     where
         boolField' :: Field Handler Bool
         boolField' = boolField
+
+imageAccessFilters :: Handler [Filter Image]
+imageAccessFilters = do
+    maid <- maybeAuthId
+    return $ case maid of
+          Nothing -> [ImagePublic ==. True]
+          Just _  -> []
+
+albumAccessFilters :: Handler [Filter Album]
+albumAccessFilters = do
+    maid <- maybeAuthId
+    return $ case maid of
+          Nothing -> [AlbumPublic ==. True]
+          Just _  -> []
 
 -- * Misc.
 

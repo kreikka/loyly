@@ -1,5 +1,6 @@
 
 <h1>#{albumTitle}
+^{flexImagesWidget albumAuthor albumIdent images}
 <p>
   Laatinut #{albumAuthor} (#{show albumDate}). #
   $if albumPublic
@@ -7,5 +8,4 @@
   $else
     Albumi on <b>yksityinen</b>. #
 <br>
-^{flexImagesWidget albumAuthor albumIdent images}
 ^{uploadWidget $ Just album}
