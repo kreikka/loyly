@@ -1,5 +1,5 @@
 <h1>Saunablogi
 
-^{recentBlogPosts Nothing}
+<ul>^{recentBlogPosts Nothing}
 
 ^{renderForm MsgAddBlogPost form BlogR (submitI MsgAddBlogPost)}

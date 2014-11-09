@@ -10,4 +10,3 @@
       <button .btn onclick="toggle_all_radio()">Julkaise kaikki
     ^{ackWidget}
   <div .form-actions>^{submitI MsgImagePublishAck}
-

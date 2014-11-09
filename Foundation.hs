@@ -244,3 +244,17 @@ renderForm legend ((_, widget), enctype) action formActions = [whamlet|
 -- | Get the 'Extra' value, used to hold data from the settings.yml file.
 getExtra :: Handler Extra
 getExtra = fmap (appExtra . settings) getYesod
+
+-- Other
+
+recentBlogPosts :: Maybe Int -> Widget
+recentBlogPosts mn = do
+    mr    <- handlerToWidget getCurrentRoute
+    posts <- handlerToWidget $ runDB $
+        selectList [] $ Desc BlogPostLog : maybe [] (return . LimitTo) mn
+    [whamlet|
+$forall Entity _ post <- posts
+  <li>
+    $with route <- BlogPostR (blogPostIdent post)
+      <a :mr == Just route:.active href=@{route}>#{blogPostTitle post}
+|]

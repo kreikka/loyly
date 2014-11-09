@@ -176,17 +176,6 @@ getBlogPostR ident = do
         setTitle $ toHtml blogPostTitle
         $(widgetFile "blog-post")
 
-recentBlogPosts :: Maybe Int -> Widget
-recentBlogPosts mn = do
-    posts <- handlerToWidget $ runDB $
-        selectList [] ((Desc BlogPostLog) : maybe [] (return . LimitTo) mn)
-    [whamlet|
-<ul>
-  $forall Entity _ post <- posts
-    <li>
-      <a href=@{BlogPostR (blogPostIdent post)}>#{blogPostTitle post}
-|]
-
 -- * Profile
 
 type AckResult = [(PersonInImageId, Maybe Bool)]

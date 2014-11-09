@@ -4,7 +4,7 @@
       Helsingin<br>
       Akateemiset<br>
       Löylyttelijät&nbsp;ry
-    <ul.nav>
+    <ul.nav.color-one>
       <li>
         <a :route == Just HomeR:.active href=@{HomeR}>Etusivu
       <li>
@@ -20,17 +20,26 @@
       <li>
         <a :route == Just PrivacyPolicyR:.active href=@{PrivacyPolicyR}>Tietosuojaseloste
       $maybe u <- maid
-        <li .bold>
-          <a :route == Just ProfileR:.active href=@{ProfileR}>Profiili (#{u})
         <li>
-          <a :isAuthRoute route:.active href=@{AuthR LogoutR}>Kirjaudu ulos
+          <a :route == Just ProfileR:.active href=@{ProfileR}>Profiili (<i>#{u}</i>)
       $nothing
         <li>
           <a :isAuthRoute route:.active href=@{AuthR LoginR}>_{Msg.LoginTitle}
+
+    <div.blog>
+      <small>Viimeksi saunablogissa
+      <ul.nav.color-two>
+        ^{recentBlogPosts (Just 3)}
+
+    $maybe _ <- maid
+      <ul.nav .color-three>
+        <li>
+          <a :isAuthRoute route:.active href=@{AuthR LogoutR}>Kirjaudu ulos
 
   <div #main role="main">
     $maybe msg <- mmsg
       <div .alert .alert-success #message>#{msg}
     ^{widget}
+
   <footer #footer>
     &copy #{extraCopyright $ appExtra $ settings master}

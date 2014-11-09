@@ -6,7 +6,11 @@
       <a href=@{AlbumR albumAuthor albumIdent}>#{albumTitle}
       \ (#{show albumDate})
 <p>
-  Galleriassa on #{numImages} kuvaa, joista #{numPrivate} yksityisiä, joista
-  #{numPrivatePending} odottaa julkaisuoikeuspäätöstä.
+  Galleriassa on #{numImages} kuvaa,
+  joista #{numPrivate} yksityisiä#
+  $if numPrivatePending == 0
+    .
+  $else
+    , joista #{numPrivatePending} odottaa julkaisuoikeuspäätöstä.
 <br>
 ^{uploadWidget Nothing}
