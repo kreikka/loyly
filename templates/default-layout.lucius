@@ -28,6 +28,7 @@ a:hover {
   text-decoration:underline;
 }
 
+/* {{{ Alerts */
 .alert {
   padding:1em 1.5em;
   margin:0.5em 0;
@@ -40,24 +41,28 @@ a:hover {
   background:rgba(230, 183, 113, 0.73);
   border:1px solid rgb(150, 72, 0);
 }
+/* }}} */
 
 /* {{{ #navbar */
 #navbar {
   .brand {
      text-decoration:none;
-     text-align:right;
      font-family:serif;
      font-style:italic;
      font-weight:700;
      color:brown;
+     font-size:2em;
+     margin:0.5em 0 0 0.5em;
+     br { display:none; }
   }
 
   .nav {
     list-style:none;
+    padding:0;
 
     li {
       text-align:right;
-      margin-top:0.5em;
+      margin-top:0;
     }
     a {
       display:inline-block;
@@ -79,9 +84,17 @@ a:hover {
   #navbar {
     float:left;
     width:15em;
+    .brand {
+      text-align:right;
+      br { display:inherit; }
+    }
+  }
+  .nav {
+    margin-left:1em;
   }
   #main {
      margin-left:17em;
+     padding-right:1em;
   }
 }
 /* }}} */
@@ -148,10 +161,12 @@ input, textarea {
 .light {
   color:rgb(111,111,111);
 }
+.bold {
+  font-weight:bold;
+}
 .img-full {
   width:100%;
 }
-
 .images {
   display:flex;
   flex-flow: row wrap;

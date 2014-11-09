@@ -4,17 +4,21 @@ Member
     homecity Text
     email Text
     hyyMember Bool        -- Is member of hyy
-    birthdate Day
+    birthdate Day Maybe
     biologicalGender Bool Maybe -- True is male, False female
     recruitedBy Text
     desc Text Maybe
+    memberSince UTCTime default=CURRENT_TIME
     UniqueMember email
 
--- use some user db for administration?
 User
-    ident Text
-    password Text Maybe
-    UniqueUser ident
+    username Text
+    UniqueUsername username
+    password ByteString
+    email Text
+    verified Bool
+    verifyKey Text
+    resetPasswordKey Text
     deriving Typeable
 
 BlogPost

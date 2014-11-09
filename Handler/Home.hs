@@ -77,10 +77,11 @@ memberForm = renderBootstrap2 $ Member False
     <*> areq textField "Kotikunta" Nothing
     <*> areq (checkM mailNotTaken emailField) "Sähköposti" Nothing
     <*> areq checkBoxField "Olen HYY:n jäsen" Nothing
-    <*> areq dayField "Syntymäaika" Nothing
+    <*> aopt dayField "Syntymäaika (ei pakollinen)" Nothing
     <*> areq (radioFieldList genderSelections) "Sukupuoli" Nothing
     <*> areq textField "Miten sait tietää meistä?" Nothing
     <*> (fmap (fmap unTextarea)) (aopt textareaField "Löylyprofiilisi" Nothing)
+    <*> lift (liftIO getCurrentTime)
   where
       genderSelections :: [(Text, Maybe Bool)]
       genderSelections = [("Mies", Just True), ("Nainen", Just False), ("Muu", Nothing)]

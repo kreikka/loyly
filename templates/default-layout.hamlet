@@ -19,6 +19,12 @@
         <a :route == Just MembersR:.active href=@{MembersR}>Jäsenet ja liittyminen
       <li>
         <a :route == Just PrivacyPolicyR:.active href=@{PrivacyPolicyR}>Tietosuojaseloste
+      <li .bold>
+        $maybe u <- maid
+          <a href=@{AuthR LogoutR}>Kirjaudu ulos
+          (#{u})
+        $nothing
+          <a href=@{AuthR LoginR}>Kirjaudu sisään
 
   <div #main role="main">
     $maybe msg <- mmsg

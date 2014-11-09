@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Foundation where
 
 import Prelude
@@ -5,7 +6,7 @@ import Data.Text (Text)
 import Yesod
 import Yesod.Static
 import Yesod.Auth
-import Yesod.Auth.BrowserId
+import Yesod.Auth.Account
 import Yesod.Default.Config
 import Yesod.Default.Util (addStaticContentExternal)
 import Network.HTTP.Client.Conduit (Manager, HasHttpManager (getHttpManager))
@@ -65,6 +66,7 @@ instance Yesod App where
         master <- getYesod
         mmsg <- getMessage
         route <- getCurrentRoute
+        maid <- maybeAuthId
 
         -- We break up the default layout into two components:
         -- default-layout is the contents of the body tag, and
@@ -130,40 +132,35 @@ instance YesodPersistRunner App where
     getDBRunner = defaultGetDBRunner connPool
 
 instance YesodAuth App where
-    type AuthId App = UserId
-
-    -- Where to send a user after successful login
+    type AuthId App = Username
+    getAuthId = return . Just . credsIdent
     loginDest _ = HomeR
-    -- Where to send a user after logout
     logoutDest _ = HomeR
+    authPlugins _ = [accountPlugin]
+    authHttpManager _ = error "No manager needed"
+    onLogin = return ()
+    maybeAuthId = lookupSession credsKey
 
-    getAuthId creds = runDB $ do
-        x <- getBy $ UniqueUser $ credsIdent creds
-        case x of
-            Just (Entity uid _) -> return $ Just uid
-            Nothing -> do
-                fmap Just $ insert User
-                    { userIdent = credsIdent creds
-                    , userPassword = Nothing
-                    }
+instance PersistUserCredentials User where
+    userUsernameF = UserUsername
+    userPasswordHashF = UserPassword
+    userEmailF = UserEmail
+    userEmailVerifiedF = UserVerified
+    userEmailVerifyKeyF = UserVerifyKey
+    userResetPwdKeyF = UserResetPasswordKey
+    uniqueUsername = UniqueUsername
 
-    -- You can add other plugins like BrowserID, email or OAuth here
-    authPlugins _ = [authBrowserId def]
+    userCreate uname email verkey pass = User uname pass email False verkey ""
 
-    authHttpManager = httpManager
+instance YesodAuthAccount (AccountPersistDB App User) App where
+    runAccountDB = runAccountPersistDB
 
--- This instance is required to use forms. You can modify renderMessage to
--- achieve customized and internationalized form validation messages.
+instance AccountSendEmail App where
+    -- TODO Add email support
+
 instance RenderMessage App FormMessage where
     renderMessage _ _ = defaultFormMessage
 
 -- | Get the 'Extra' value, used to hold data from the settings.yml file.
 getExtra :: Handler Extra
 getExtra = fmap (appExtra . settings) getYesod
-
--- Note: previous versions of the scaffolding included a deliver function to
--- send emails. Unfortunately, there are too many different options for us to
--- give a reasonable default. Instead, the information is available on the
--- wiki:
---
--- https://github.com/yesodweb/yesod/wiki/Sending-email

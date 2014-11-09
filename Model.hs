@@ -4,6 +4,7 @@ import Yesod
 import Yesod.Markdown (Markdown)
 import Data.Text (Text)
 import Data.Time (UTCTime)
+import Data.ByteString (ByteString)
 import Database.Persist.Quasi
 import Data.Typeable (Typeable)
 import Data.Time.Calendar (Day)
