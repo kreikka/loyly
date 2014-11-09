@@ -6,11 +6,13 @@
 
 /                    HomeR          GET
 /members             MembersR       GET POST
-/me                  ProfileR       GET
-/profile/#Text       PublicProfileR GET
 /activities          ActivitiesR    GET
 /association         AssociationR   GET
 /privacy-policy      PrivacyPolicyR GET
+
+/me                  ProfileR       GET
+/profile/#Text       PublicProfileR GET
+
 /blog                BlogR          GET POST
 /blog/#Text          BlogPostR      GET
 
@@ -18,4 +20,7 @@
 /gallery/#Text/#Text      AlbumR         GET POST
 /gallery/#Text/#Text/#Int ImageViewR     GET POST
 /image/#Text/#Text/#Int   ImageR         GET
+/image-ack                ImagePublishAckR   POST
 /thumb/#Text/#Text/#Int   ThumbR         GET
+/image-by-id/#ImageId     ImageByIdR     GET
+/thumb-by-id/#ImageId     ThumbByIdR     GET

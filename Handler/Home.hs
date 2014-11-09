@@ -5,17 +5,14 @@
 module Handler.Home where
 
 import           Import
-import           Control.Monad
-import           Control.Applicative
-import qualified Data.Text  as T
-import           Data.Text.Encoding
-import           Data.Time
-import           Data.Char (toLower, isSpace, isPunctuation)
-import           Data.Maybe
 import qualified Data.ByteString.Lazy as B
 import qualified Data.ByteString.Builder as B
 import           Data.Conduit
 import qualified Data.Conduit.List as CL
+import           Data.Char (toLower, isSpace, isPunctuation)
+import qualified Data.Text  as T
+import           Data.Text.Encoding
+import           Data.Time
 
 ---------------------------------------------------------------
 import           System.FilePath ((</>), (<.>))
@@ -191,15 +188,46 @@ recentBlogPosts mn = do
 
 -- * Profile
 
+type AckResult = [(PersonInImageId, Maybe Bool)]
+
 getProfileR :: Handler Html
 getProfileR = do
     u <- requireAuthId
-    Entity _ user <- runDB $ getBy404 $ UniqueUsername u
+    Entity uid user <- runDB $ getBy404 $ UniqueUsername u
     mmemb <- runDB $ getBy $ UniqueMember $ userEmail user
     passForm <- runFormPost $ renderBootstrap2 $ newPasswordForm u (userResetPasswordKey user)
+    ((_, ackWidget), enctype) <- runImagePublishAckForm uid
     defaultLayout $ do
         setTitle "Löylyprofiili"
         $(widgetFile "profile")
+
+postImagePublishAckR :: Handler Html
+postImagePublishAckR = getProfileR -- XXX: is this always sensible?
+
+-- runImagePublishAckForm :: UserId -> Handler (Form AckResult)
+runImagePublishAckForm uid = do
+    acks <- runDB $ selectList [ PersonInImageUser ==. uid, PersonInImagePublishable ==. Nothing]
+                               [ Asc PersonInImageImg ]
+    let runForm = runFormPost $ renderBootstrap2 $ sequenceA $ map ackForm acks
+    form@((res,_),_) <- runForm
+    case res of
+        FormSuccess xs -> do runDB $ mapM_ (uncurry updatePublishable) xs
+                             runForm
+        _ -> return form
+  where
+    ackForm (Entity k v) = (k, ) <$> aopt (ackField v) "" Nothing
+
+    updatePublishable k status = update k [PersonInImagePublishable =. status]
+
+ackField :: PersonInImage -> Field Handler Bool
+ackField v = boolField' { fieldView = \theId name attrs val isReq -> [whamlet|
+<div.clearfix.ack>
+  <img style="float:left" src=@{ThumbByIdR $ personInImageImg v}>
+  <div .controls .clearfix>^{fieldView boolField' theId name attrs val isReq}
+|] }
+    where
+        boolField' :: Field Handler Bool
+        boolField' = boolField
 
 getPublicProfileR :: Text -> Handler Html
 getPublicProfileR u = do
@@ -210,6 +238,8 @@ getPublicProfileR u = do
         $(widgetFile "profile-public")
 
 -- * Gallery
+
+type ImageInfo = (Entity Album, Entity Image, [Entity User])
 
 -- | Some default view; recent imgs or smth
 getGalleryR, postGalleryR :: Handler Html
@@ -262,20 +292,20 @@ getImageViewR author ident nth = do
             $(widgetFile "gallery-image")
 
 getImageR, getThumbR :: Text -> Text -> Int -> Handler ()
-getImageR = sendImageWith False
-getThumbR = sendImageWith True
+getImageR x y z = sendImage False =<< getImage x y z
+getThumbR x y z = sendImage True  =<< getImage x y z
 
--- | Unoverloaded version of ThumbR/ImageR
-sendImageWith :: Bool -> Text -> Text -> Int -> Handler ()
-{-# INLINE sendImageWith #-}
-sendImageWith thumb author ident nth = do
-    root                                  <- extraGalleryRoot <$> getExtra
-    (Entity aid _, Entity _ Image{..}, _) <- getImage author ident nth
+getImageByIdR, getThumbByIdR :: ImageId -> Handler ()
+getImageByIdR = getImageById >=> sendImage False
+getThumbByIdR = getImageById >=> sendImage True
 
+sendImage :: Bool -> ImageInfo -> Handler ()
+{-# INLINE sendImage #-}
+sendImage thumb (Entity aid _, Entity _ Image{..}, _) = do
+    root <- extraGalleryRoot <$> getExtra
     let path = root </> show (fromSqlKey aid) </>
                 (if thumb then thumbDir </> imageFile <.> ".jpg"
                           else imageFile <.> imageFileExt)
-
     sendFile (if thumb then typeJpeg else imageContentType) path
 
 imageEditForm allPeople (_,Entity _ img, people) = (,)
@@ -287,8 +317,7 @@ uploadWidget malbum = do
     ((result, widget), _) <- handlerToWidget $ runFormPost $ renderBootstrap2 $ (,,,)
         <$> areq textField "Albumin otsikko" (albumTitle . entityVal <$> malbum)
         <*> areq textField "Kuka olet" Nothing
-        <*> maybe (areq boolField "Kuvissa on henkilöitä" Nothing)
-                  (pure . albumPublic . entityVal) malbum
+        <*> areq checkBoxField "Albumi on julkinen" Nothing
         <*> areq passwordField "Salasana" Nothing
 
     case result of
@@ -304,8 +333,11 @@ uploadWidget malbum = do
             setMessage $ toHtml $ show nfiles ++ " kuvaa lisätty."
             redirect $ AlbumR albumAuthor albumIdent
 
-        _ -> renderForm ((result, widget >> filesWidget), Multipart) GalleryR (submitI MsgCreateNewAlbum)
+        _ -> renderForm msg ((result, widget >> filesWidget), Multipart) GalleryR (submitI msg)
   where
+    msg = case malbum of
+              Nothing -> MsgCreateNewAlbum
+              Just a  -> MsgUpdateAlbum
     filesWidget = [whamlet|
 <div.control-group.clearfix required>
     <label.control-label for=files>Kuvatiedostot
@@ -388,12 +420,21 @@ flexImagesWidget' images = do
 -- XXX: Could use a join here too
 getImage :: Text -> Text -> Int -> Handler (Entity Album, Entity Image, [Entity User])
 getImage author ident nth = runDB $ do
-    album     <- getBy404 $ UniqueAlbum author ident
-    image     <- getBy404 $ UniqueImage (entityKey album) nth
-    peopleIds <- map (personInImageUser . entityVal) <$> selectList [PersonInImageImg ==. entityKey image] []
-    people    <- selectList [UserId <-. peopleIds] [Asc UserUsername]
+    album  <- getBy404 $ UniqueAlbum author ident
+    image  <- getBy404 $ UniqueImage (entityKey album) nth
+    people <- getImagePeople $ entityKey image
     return (album, image, people)
 
+getImageById :: ImageId -> Handler ImageInfo
+getImageById iid = runDB $ do
+    image  <- get404 iid
+    album  <- get404 (imageAlbum image)
+    people <- getImagePeople iid
+    return (Entity (imageAlbum image) album, Entity iid image, people)
+
+getImagePeople iid = do
+    peopleIds <- map (personInImageUser . entityVal) <$> selectList [PersonInImageImg ==. iid] []
+    selectList [UserId <-. peopleIds] [Asc UserUsername]
 
 -- * Misc.
 

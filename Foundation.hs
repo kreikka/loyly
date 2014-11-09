@@ -147,9 +147,8 @@ instance YesodAuth App where
     renderAuthMessage _ _ = Msg.finnishMessage -- TODO i18n
     authPlugins _ = [ accountPlugin { apLogin = \tm -> do
         form <- liftHandlerT $ runFormPostNoToken $ renderBootstrap2 loginForm
+        renderForm Msg.LoginTitle form (tm loginFormPostTargetR) (submitI Msg.LoginTitle)
         [whamlet|
-<h1>Kirjaudu sisään
-^{renderForm form (tm loginFormPostTargetR) (submitI Msg.LoginTitle)}
 <p>
   <a href=@{tm newAccountR}>_{Msg.RegisterLong}
   <br>
@@ -176,11 +175,10 @@ instance YesodAuthAccount (AccountPersistDB App User) App where
         lift $ defaultLayout $ do
             setTitleI Msg.RegisterLong
             form <- liftHandlerT $ runFormPost $ renderBootstrap2 newAccountForm
+            renderForm Msg.RegisterLong form (tm newAccountR) (submitI Msg.Register)
             [whamlet|
-<h1>_{Msg.RegisterLong}
-^{renderForm form (tm newAccountR) (submitI Msg.Register)}
 <p>
-    <a href=@{AuthR LoginR}>_{Msg.LoginTitle}
+  <a href=@{AuthR LoginR}>_{Msg.LoginTitle}
 |]
 
     getResetPasswordR = do
@@ -188,19 +186,15 @@ instance YesodAuthAccount (AccountPersistDB App User) App where
         lift $ defaultLayout $ do
             setTitleI Msg.PasswordResetTitle
             form <- liftHandlerT $ runFormPost $ renderBootstrap2 resetPasswordForm
-            [whamlet|
-<h1>_{Msg.PasswordResetTitle}
-^{renderForm form (tm resetPasswordR) (submitI Msg.SendPasswordResetEmail)}
-|]
+            renderForm Msg.PasswordResetTitle form (tm resetPasswordR) (submitI Msg.SendPasswordResetEmail)
 
     unregisteredLogin u = do
         tm <- getRouteToParent
         lift $ defaultLayout $ do
             setTitleI Msg.MsgEmailUnverified
-            [whamlet|<h1>Kirjautuminen epäonnistui|] -- TODO i18n
-            [whamlet|<p>_{Msg.MsgEmailUnverified}|]
+            [whamlet|<div .alert .alert-error>Kirjautuminen epäonnistui|] -- TODO i18n
             form <- liftHandlerT $ runFormPost $ renderBootstrap2 $ resendVerifyEmailForm (username u)
-            renderForm form (tm resendVerifyR) (submitI Msg.MsgResendVerifyEmail)
+            renderForm Msg.MsgEmailUnverified form (tm resendVerifyR) (submitI Msg.MsgResendVerifyEmail)
 
 -- XXX: pull request to yesod-auth-account
 finnishAccountMsg :: Msg.AccountMsg -> T.Text
@@ -231,10 +225,12 @@ instance RenderMessage App FormMessage where
 submitI :: RenderMessage App a => a -> Widget
 submitI msg = [whamlet|<input .btn type=submit value=_{msg}>|]
 
-renderForm :: ((t, Widget), Enctype) -> Route App -> Widget -> Widget
-renderForm ((_, widget), enctype) action formActions = [whamlet|
+renderForm :: RenderMessage App msg => msg -> ((t, Widget), Enctype) -> Route App -> Widget -> Widget
+renderForm legend ((_, widget), enctype) action formActions = [whamlet|
 <form .form method=post enctype=#{enctype} action=@{action}>
-  ^{widget}
+  <fieldset>
+    <legend>_{legend}
+    ^{widget}
   <div .form-actions>^{formActions}
 |]
 

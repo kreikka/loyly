@@ -3,12 +3,15 @@ module Import
     ) where
 
 import           Prelude              as Import hiding (head, init, last,
-                                                 readFile, tail, writeFile)
+                                                 readFile, tail, writeFile, mapM, sequence)
 import           Yesod                as Import hiding (Route (..))
 import           Yesod.Auth           as Import (maybeAuthId, requireAuthId)
 
-import           Control.Applicative  as Import (pure, (<$>), (<*>))
+import           Control.Applicative  as Import
+import           Control.Monad        as Import ((>=>), when)
 import           Data.Text            as Import (Text)
+import           Data.Traversable     as Import
+import           Data.Maybe           as Import
 
 import           Foundation           as Import
 import           Model                as Import

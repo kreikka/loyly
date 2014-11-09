@@ -18,7 +18,6 @@
 <blockquote>#{imageDesc}
 
 $if maid == Just imageAuthor
-  <h2>Muokkaa kuvan tietoja
-  ^{renderForm form route (submitI MsgUpdateImageInfo)}
+  ^{renderForm MsgUpdateImageInfo form route (submitI MsgUpdateImageInfo)}
 $else
   <i>Vain kuvan lisääjä, #{imageAuthor}, voi muokata tämän kuvan tietoja.

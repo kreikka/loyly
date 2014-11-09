@@ -1,0 +1,9 @@
+function toggle_all_radio() {
+  xs = document.getElementsByTagName("input");
+  for (var i = 0; i < xs.length; i++) {
+    if (xs[i].type === "radio" && xs[i].value === "yes") {
+      xs[i].checked = true;
+    }
+  }
+  return false;
+}

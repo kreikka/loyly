@@ -131,12 +131,6 @@ a:hover {
   .radio input {
     margin-right:0.3em;
   }
-  .form-actions {
-    border-top:1px solid gray;
-    background:rgba(121,39,0,0.1);
-    margin-top:1em;
-    padding:1em 0.5em 1em 15em;
-  }
   .error .help-block {
     color:red;
     font-size:90%;
@@ -151,6 +145,19 @@ a:hover {
     border-color:rgba(165, 42, 42, 0.14);
     padding:0.1em 0.3em;
   }
+}
+.form-actions {
+  border-top:1px solid gray;
+  background:rgba(121,39,0,0.1);
+  margin-top:1em;
+  padding:1em 0.5em 1em 15em;
+}
+.ack {
+  margin-top:1em;
+  .controls { padding:1em; }
+  input { margin-top: 1em; }
+  label { white-space:pre; margin:1em 0 0 0.5em; }
+  label::after { content:'\A'; }
 }
 /* }}}  */
 

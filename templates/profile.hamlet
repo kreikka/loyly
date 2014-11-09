@@ -1,43 +1,54 @@
 <h1>Profiili: #{u}
 
+<form style="margin-top:1em" method=post enctype=#{enctype} action=@{ImagePublishAckR}>
+  <fieldset>
+    <legend>
+      Hyväksymistä odottavat galleriakuvat
+    <small>
+      Anna julkaisuoikeudet niille kuville, jotka haluat <b>julkiseen webbiin</b>.
+      Jos et anna kuvalle julkaisuoikeutta, on se edelleen nähtävissä yksityisenä.
+      Ota yhteys kuvan lisääjään jos haluat kuvan poistettavan.
+    <p>
+      <button .btn onclick="toggle_all_radio()">Julkaise kaikki
+    ^{ackWidget}
+  <div .form-actions>^{submitI MsgImagePublishAck}
+
+<h2>Jäsentiedot
 <p>
   <b>Sähköpostiosoite:
   #{userEmail user}
 
 $maybe Entity _ m <- mmemb
   $if memberApproved m
-    <div .alert.alert-success>
-      Jäsenyytesi on voimassa.
+    Jäsenyytesi on voimassa.
+    <b>Jäsen alkaen:
+    #{show $ memberMemberSince m}
+    <br>
   $else
     <div .alert .alert-info>
       Jäsenhakemuksesi odottaa hyväksymistä. Hakemuksesi käsitellään seuraavassa
-      hallituksen kokouksessa.
+      hallituksen kokouksessa. Teit hakemukset #{show $ memberMemberSince m}.
+  $if memberHyyMember m
+    <b>Olet
+    HYY:n jäsen.
+  $else
+    <b>Et ole
+    HYY:n jäsen.
 
-  <p>
-    <b>Jäsen alkaen:
-    #{show $ memberMemberSince m}
+  <br>
+  $if userAutoPublishImages user
+    Uudet gallariakuvat sinusta ovat aina julkisia
+  $else
+    Uudet galleriakuvat sinusta vaativat sinun hyväksymisen ennen
+    julkaisemista.
 
-  <p>
-    $if memberHyyMember m
-      <b>Olet
-      HYY:n jäsen.
-    $else
-      <b>Et ole
-      HYY:n jäsen.
-
-  <p>
-    $if userAutoPublishImages user
-      Uudet gallariakuvat sinusta ovat aina julkisia
-    $else
-      Uudet galleriakuvat sinusta vaativat sinun hyväksymisen ennen
-      julkaisemista.
-
-  <p>
-    $maybe p <- memberDesc m
-      <p>Löylyprofiili:
-      <blockquote>#{p}
-    $nothing
-      <p>Sinulla ei ole vielä löylyprofiilia.
+  <br>
+  $maybe p <- memberDesc m
+    Löylyprofiili:
+    <blockquote>#{p}
+  $nothing
+    <p>
+      Sinulla ei ole vielä löylyprofiilia.
 
 $nothing
   <p>
@@ -47,10 +58,7 @@ $nothing
     voit liittyä jäseneksi. Muista käyttää samaa ylläolevaa
     sähköpostiosoitetta.
 
-<h2>Vaihda salasanasi
-
-^{renderForm passForm (AuthR setPasswordR) (submitI Msg.SetPassTitle)}
-
+^{renderForm Msg.SetPassTitle passForm (AuthR setPasswordR) (submitI Msg.SetPassTitle)}
 <p>
   Unohditko salasanasi?
   <a href=@{AuthR resetPasswordR}>_{Msg.SendPasswordResetEmail}

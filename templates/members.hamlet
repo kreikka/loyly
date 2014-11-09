@@ -13,11 +13,9 @@
   Yhdistykseen liittyminen tapahtuu alta löytyvällä lomakkeella. Liitythän myös
   kanavallemme #saunahali @IRCnet !
 
-<h2>Liity jäseneksi
-
 $maybe _ <- maid
   <p>
-    Olet jo jäsen.
+    Olet jäsen.
     \<a href=@{ProfileR}>Siirry profiilisi</a>.
 
 $nothing
@@ -25,7 +23,7 @@ $nothing
     $of FormFailure _
       <div .alert .alert-error>Hups... jotain meni pieleen!
     $of _
-  ^{renderForm form MembersR (submitI MsgJoinMember)}
+  ^{renderForm MsgJoinMember form MembersR (submitI MsgJoinMember)}
 
 <h2>Jäsenten profiilit
 

@@ -2,6 +2,4 @@
 
 ^{recentBlogPosts Nothing}
 
-<h2>Lisää postaus
-
-^{renderForm form BlogR (submitI MsgAddBlogPost)}
+^{renderForm MsgAddBlogPost form BlogR (submitI MsgAddBlogPost)}
