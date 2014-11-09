@@ -52,6 +52,7 @@ postMembersR = do
         _ -> return ()
 
     maid <- maybeAuthId
+    users <- runDB $ selectList [] [Asc UserUsername]
 
     defaultLayout $ do
         setTitle "Jäsenet ja liittyminen"

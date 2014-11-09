@@ -26,3 +26,9 @@ $nothing
       <div .alert .alert-error>Hups... jotain meni pieleen!
     $of _
   ^{renderForm form MembersR (submitI MsgJoinMember)}
+
+<h2>Jäsenten profiilit
+
+<p>
+  $forall Entity _ u <- users
+    <a href=@{PublicProfileR $ userUsername u}>#{userUsername u}
