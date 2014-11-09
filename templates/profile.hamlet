@@ -1,0 +1,56 @@
+<h1>Profiili: #{u}
+
+<p>
+  <b>Sähköpostiosoite:
+  #{userEmail user}
+
+$maybe Entity _ m <- mmemb
+  $if memberApproved m
+    <div .alert.alert-success>
+      Jäsenyytesi on voimassa.
+  $else
+    <div .alert .alert-info>
+      Jäsenhakemuksesi odottaa hyväksymistä. Hakemuksesi käsitellään seuraavassa
+      hallituksen kokouksessa.
+
+  <p>
+    <b>Jäsen alkaen:
+    #{show $ memberMemberSince m}
+
+  <p>
+    $if memberHyyMember m
+      <b>Olet
+      HYY:n jäsen.
+    $else
+      <b>Et ole
+      HYY:n jäsen.
+
+  <p>
+    $if userAutoPublishImages user
+      Uudet gallariakuvat sinusta ovat aina julkisia
+    $else
+      Uudet galleriakuvat sinusta vaativat sinun hyväksymisen ennen
+      julkaisemista.
+
+  <p>
+    $maybe p <- memberDesc m
+      <p>Löylyprofiili:
+      <blockquote>#{p}
+    $nothing
+      <p>Sinulla ei ole vielä löylyprofiilia.
+
+$nothing
+  <p>
+    Jäsentietojasi ei löytynyt. Luultavimmin et siis ole vielä liittynyt
+    yhdistykseen.
+    <a href=@?{(MembersR, [("email", userEmail user)])}>Tällä sivulla
+    voit liittyä jäseneksi. Muista käyttää samaa ylläolevaa
+    sähköpostiosoitetta.
+
+<h2>Vaihda salasanasi
+
+^{renderForm passForm (AuthR setPasswordR) (submitI Msg.SetPassTitle)}
+
+<p>
+  Unohditko salasanasi?
+  <a href=@{AuthR resetPasswordR}>_{Msg.SendPasswordResetEmail}

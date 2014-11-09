@@ -16,6 +16,6 @@
 
 /gallery                  GalleryR       GET POST
 /gallery/#Text/#Text      AlbumR         GET POST
-/gallery/#Text/#Text/#Int ImageViewR     GET
+/gallery/#Text/#Text/#Int ImageViewR     GET POST
 /image/#Text/#Text/#Int   ImageR         GET
 /thumb/#Text/#Text/#Int   ThumbR         GET

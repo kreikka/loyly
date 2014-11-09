@@ -1,0 +1,17 @@
+<h1>Löylyprofiili: #{u}
+
+<p>
+  <b>Jäsen alkaen:
+  #{show $ memberMemberSince memb}
+
+<p>
+  $if userAutoPublishImages user
+    Kuvat aina julkisia
+  $else
+    Kuvat henkilöstä vaativat luvan ennen julkaisua
+
+<p>
+  $maybe p <- memberDesc memb
+    <blockquote>#{p}
+  $nothing
+    <i>Löylyprofiilia ei löytynyt

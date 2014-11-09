@@ -1,8 +1,15 @@
 
 <h1>#{albumTitle}
 
-<p>Laatija: #{albumAuthor} (#{show albumDate})
+<p>
+  Laatinut #{albumAuthor} (#{show albumDate}).
+  $if albumPublic
+    Albumi on <b>julkinen</b>.
+  $else
+    Albumi on <b>yksityinen</b>.
+
 <br>
+
 ^{flexImagesWidget albumAuthor albumIdent images}
 
 <h2>Muokkaa tai lisää kuvia

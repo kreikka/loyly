@@ -165,7 +165,7 @@ instance PersistUserCredentials User where
     userResetPwdKeyF = UserResetPasswordKey
     uniqueUsername = UniqueUsername
 
-    userCreate uname email verkey pass = User uname pass email False verkey ""
+    userCreate uname email verkey pass = User uname pass email False verkey "" False
 
 instance YesodAuthAccount (AccountPersistDB App User) App where
     runAccountDB = runAccountPersistDB

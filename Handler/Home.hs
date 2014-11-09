@@ -6,6 +6,7 @@ module Handler.Home where
 
 import           Import
 import           Control.Monad
+import           Control.Applicative
 import qualified Data.Text  as T
 import           Data.Text.Encoding
 import           Data.Time
@@ -233,9 +234,19 @@ postAlbumR author ident = do
         setTitle $ toHtml albumTitle
         $(widgetFile "gallery-album")
 
-getImageViewR :: Text -> Text -> Int -> Handler Html
+getImageViewR, postImageViewR :: Text -> Text -> Int -> Handler Html
+postImageViewR = getImageViewR
 getImageViewR author ident nth = do
-    (Entity _ Album{..}, Entity _ Image{..}) <- getImage author ident nth
+    img@(Entity _ Album{..}, Entity _ Image{..}, people) <- getImage author ident nth
+
+    allPeople <- fmap (map $ liftA2 (,) id id . userUsername . entityVal) $ runDB $ selectList [] [Asc UserUsername]
+    form@((res,_),_) <- runFormPost $ renderBootstrap2 $ imageEditForm allPeople img
+    case res of
+        FormSuccess newPeople -> do
+            undefined
+        _ -> return ()
+
+    Just route <- getCurrentRoute
     defaultLayout $ do
         setTitle "An image"
         $(widgetFile "gallery-image")
@@ -248,8 +259,8 @@ getThumbR = sendImageWith True
 sendImageWith :: Bool -> Text -> Text -> Int -> Handler ()
 {-# INLINE sendImageWith #-}
 sendImageWith thumb author ident nth = do
-    root                               <- extraGalleryRoot <$> getExtra
-    (Entity aid _, Entity _ Image{..}) <- getImage author ident nth
+    root                                  <- extraGalleryRoot <$> getExtra
+    (Entity aid _, Entity _ Image{..}, _) <- getImage author ident nth
 
     let path = root </> show (fromSqlKey aid) </>
                 (if thumb then thumbDir </> imageFile <.> ".jpg"
@@ -257,22 +268,27 @@ sendImageWith thumb author ident nth = do
 
     sendFile (if thumb then typeJpeg else imageContentType) path
 
+imageEditForm allPeople (_,_,people) = 
+    areq (multiSelectFieldList allPeople) "Ihmiset kuvassa" (Just $ userUsername . entityVal <$> people)
+
 uploadWidget :: Maybe (Entity Album) -> Widget
 uploadWidget malbum = do
-    ((result, widget), _) <- handlerToWidget $ runFormPost $ renderBootstrap2 $ (,,)
+    ((result, widget), _) <- handlerToWidget $ runFormPost $ renderBootstrap2 $ (,,,)
         <$> areq textField "Albumin otsikko" (albumTitle . entityVal <$> malbum)
         <*> areq textField "Kuka olet" Nothing
+        <*> maybe (areq boolField "Kuvissa on henkilöitä" Nothing)
+                  (pure . albumPublic . entityVal) malbum
         <*> areq passwordField "Salasana" Nothing
 
     case result of
-        FormSuccess (title, author, pass) -> do
+        FormSuccess (title, author, public, pass) -> do
 
             handlerToWidget $ do
                 pass' <- extraBlogPass <$> getExtra
                 when (pass /= pass') $ do setMessage "Väärä salasana"
                                           redirect GalleryR
 
-            Entity aid Album{..} <- handlerToWidget $ createOrUpdateAlbum author malbum title
+            Entity aid Album{..} <- handlerToWidget $ createOrUpdateAlbum author malbum title public
             nfiles <- lookupFiles "files" >>= handlerToWidget . saveFiles author aid
             setMessage $ toHtml $ show nfiles ++ " kuvaa lisätty."
             redirect $ AlbumR albumAuthor albumIdent
@@ -280,7 +296,7 @@ uploadWidget malbum = do
         _ -> renderForm ((result, widget >> filesWidget), Multipart) GalleryR (submitI MsgCreateNewAlbum)
   where
     filesWidget = [whamlet|
-<div.control-group required>
+<div.control-group.clearfix required>
     <label.control-label for=files>Kuvatiedostot
     <div.controls input>
         <input#files name=files type=file multiple>
@@ -305,7 +321,7 @@ saveFiles author aid fs = do
             contentType = simpleContentType $ encodeUtf8 $ fileContentType fi
 
         liftIO $ fileMove fi (albumRoot </> file <.> ext)
-        _ <- runDB $ insert $ Image time aid nth (T.pack base) author contentType file ext
+        _ <- runDB $ insert $ Image False time aid nth (T.pack base) author contentType file ext
         return (file <.> ext)
 
     code <- liftIO $ generateThumbnails albumRoot thumbDir names
@@ -326,13 +342,15 @@ generateThumbnails albumRoot thumbs names = do
 -- Or update album title.
 --
 -- NOTE don't use @albumTitle@ returned here, it is not updated
-createOrUpdateAlbum :: Text -> Maybe (Entity Album) -> Text -> Handler (Entity Album)
-createOrUpdateAlbum author (Just (Entity aid album)) title = do
-    runDB (update aid [AlbumTitle =. title])
+createOrUpdateAlbum :: Text -> Maybe (Entity Album) -> Text -> Bool -> Handler (Entity Album)
+createOrUpdateAlbum _author (Just (Entity aid album)) title public = do
+    runDB (update aid [ AlbumTitle =. title
+                      , AlbumPublic =. public ])
     return $ Entity aid album
-createOrUpdateAlbum author Nothing                   title = do
+
+createOrUpdateAlbum author Nothing                    title public = do
     time      <- liftIO getCurrentTime
-    let album = Album time (toUrlIdent title) title author
+    let album = Album public time (toUrlIdent title) title author
     aid       <- runDB $ insert album
     return $ Entity aid album
 
@@ -357,11 +375,13 @@ flexImagesWidget' images = do
 |]
 
 -- XXX: Could use a join here too
-getImage :: Text -> Text -> Int -> Handler (Entity Album, Entity Image)
+getImage :: Text -> Text -> Int -> Handler (Entity Album, Entity Image, [Entity User])
 getImage author ident nth = runDB $ do
-    album@(Entity aid _) <- getBy404 $ UniqueAlbum author ident
-    image                <- getBy404 $ UniqueImage aid nth
-    return (album, image)
+    album     <- getBy404 $ UniqueAlbum author ident
+    image     <- getBy404 $ UniqueImage (entityKey album) nth
+    peopleIds <- map (personInImageUser . entityVal) <$> selectList [PersonInImageImg ==. entityKey image] []
+    people    <- selectList [UserId <-. peopleIds] [Asc UserUsername]
+    return (album, image, people)
 
 
 -- * Misc.

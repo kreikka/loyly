@@ -143,13 +143,11 @@ a:hover {
   }
   input[type*=text],
   input[type*=email],
+  input[type*=date],
+  input[type*=password],
+  select,
   textarea {
     width:100%;
-  }
-  input[type*=text],
-  input[type*=email],
-  input[type*=date],
-  textarea {
     border-color:rgba(165, 42, 42, 0.14);
     padding:0.1em 0.3em;
   }
