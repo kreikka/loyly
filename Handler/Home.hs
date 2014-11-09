@@ -419,7 +419,7 @@ getImageById iid = runDB $ do
     people <- getImagePeople iid
     return (Entity (imageAlbum image) album, Entity iid image, people)
 
--- getImagePeople :: ImageId -> m [(PersonInImage, Entity User)]
+getImagePeople :: ImageId -> Query [(PersonInImage, Entity User)]
 getImagePeople iid = do
     piis <- selectList [PersonInImageImg ==. iid] []
     let people = map entityVal piis
@@ -427,7 +427,7 @@ getImagePeople iid = do
 
 -- ** Access control
     
--- publishIfAcked :: ImageId -> m ()
+publishIfAcked :: ImageId -> Query ()
 publishIfAcked iid = do
     piis <- selectList [PersonInImageImg ==. iid] []
     all ((== Just True) . personInImagePublishable . entityVal) piis
