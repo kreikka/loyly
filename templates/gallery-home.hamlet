@@ -1,14 +1,8 @@
-
 <h1>Galleria
-  
 ^{flexImagesWidget' images}
-
 <ul>
   $forall Entity _ Album{..} <- albums
     <li>
       <a href=@{AlbumR albumAuthor albumIdent}>#{albumTitle}
       \ (#{show albumDate})
-
-<h2>Uusi albumi
-
 ^{uploadWidget Nothing}

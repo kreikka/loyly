@@ -196,38 +196,13 @@ getProfileR = do
     Entity uid user <- runDB $ getBy404 $ UniqueUsername u
     mmemb <- runDB $ getBy $ UniqueMember $ userEmail user
     passForm <- runFormPost $ renderBootstrap2 $ newPasswordForm u (userResetPasswordKey user)
-    ((_, ackWidget), enctype) <- runImagePublishAckForm uid
+    (((_, ackWidget), enctype), ackImages) <- runImagePublishAckForm uid
     defaultLayout $ do
         setTitle "Löylyprofiili"
         $(widgetFile "profile")
 
 postImagePublishAckR :: Handler Html
 postImagePublishAckR = getProfileR -- XXX: is this always sensible?
-
--- runImagePublishAckForm :: UserId -> Handler (Form AckResult)
-runImagePublishAckForm uid = do
-    acks <- runDB $ selectList [ PersonInImageUser ==. uid, PersonInImagePublishable ==. Nothing]
-                               [ Asc PersonInImageImg ]
-    let runForm = runFormPost $ renderBootstrap2 $ sequenceA $ map ackForm acks
-    form@((res,_),_) <- runForm
-    case res of
-        FormSuccess xs -> do runDB $ mapM_ (uncurry updatePublishable) xs
-                             runForm
-        _ -> return form
-  where
-    ackForm (Entity k v) = (k, ) <$> aopt (ackField v) "" Nothing
-
-    updatePublishable k status = update k [PersonInImagePublishable =. status]
-
-ackField :: PersonInImage -> Field Handler Bool
-ackField v = boolField' { fieldView = \theId name attrs val isReq -> [whamlet|
-<div.clearfix.ack>
-  <img style="float:left" src=@{ThumbByIdR $ personInImageImg v}>
-  <div .controls .clearfix>^{fieldView boolField' theId name attrs val isReq}
-|] }
-    where
-        boolField' :: Field Handler Bool
-        boolField' = boolField
 
 getPublicProfileR :: Text -> Handler Html
 getPublicProfileR u = do
@@ -237,9 +212,12 @@ getPublicProfileR u = do
         setTitle $ toHtml $ "Löylyprofiili: " <> userUsername user
         $(widgetFile "profile-public")
 
+
 -- * Gallery
 
-type ImageInfo = (Entity Album, Entity Image, [Entity User])
+type ImageInfo = (Entity Album, Entity Image, [(PersonInImage, Entity User)])
+
+-- ** Handlers
 
 -- | Some default view; recent imgs or smth
 getGalleryR, postGalleryR :: Handler Html
@@ -284,6 +262,7 @@ getImageViewR author ident nth = do
                     update iid [ImageDesc =. fromMaybe "" newDesc]
                     deleteWhere [PersonInImageImg ==. iid, PersonInImageUser /<-. newPeople]
                     mapM_ (\u -> insertUnique $ PersonInImage iid u Nothing) newPeople
+                    publishIfAcked iid
                 redirect route
             _ -> return ()
 
@@ -308,8 +287,14 @@ sendImage thumb (Entity aid _, Entity _ Image{..}, _) = do
                           else imageFile <.> imageFileExt)
     sendFile (if thumb then typeJpeg else imageContentType) path
 
+-- ** Forms etc.
+
+imageEditForm :: RenderMessage App msg
+              => [(msg, UserId)]
+              -> ImageInfo
+              -> AForm Handler ([UserId], Maybe Text)
 imageEditForm allPeople (_,Entity _ img, people) = (,)
-    <$> areq (multiSelectFieldList allPeople) "Ihmiset kuvassa" (Just $ entityKey <$> people)
+    <$> areq (multiSelectFieldList allPeople) "Ihmiset kuvassa" (Just $ entityKey . snd <$> people)
     <*> (fmap unTextarea <$> aopt textareaField "Meta" (Just . Just . Textarea $ imageDesc img))
 
 uploadWidget :: Maybe (Entity Album) -> Widget
@@ -344,6 +329,21 @@ uploadWidget malbum = do
     <div.controls input>
         <input#files name=files type=file multiple>
 |]
+
+-- NOTE don't use @albumTitle@ returned here, it is not updated
+createOrUpdateAlbum :: Text -> Maybe (Entity Album) -> Text -> Bool -> Handler (Entity Album)
+createOrUpdateAlbum _author (Just (Entity aid album)) title public = do
+    runDB (update aid [ AlbumTitle =. title
+                      , AlbumPublic =. public ])
+    return $ Entity aid album
+
+createOrUpdateAlbum author Nothing                    title public = do
+    time      <- liftIO getCurrentTime
+    let album = Album public time (toUrlIdent title) title author
+    aid       <- runDB $ insert album
+    return $ Entity aid album
+
+-- ** Files and thumbs (in fs)
 
 -- | Save files. Return number of new images.
 saveFiles :: Text -> AlbumId -> [FileInfo] -> Handler Int
@@ -382,20 +382,7 @@ generateThumbnails albumRoot thumbs names = do
         { P.cwd = Just albumRoot }
     P.waitForProcess ph
 
--- Or update album title.
---
--- NOTE don't use @albumTitle@ returned here, it is not updated
-createOrUpdateAlbum :: Text -> Maybe (Entity Album) -> Text -> Bool -> Handler (Entity Album)
-createOrUpdateAlbum _author (Just (Entity aid album)) title public = do
-    runDB (update aid [ AlbumTitle =. title
-                      , AlbumPublic =. public ])
-    return $ Entity aid album
-
-createOrUpdateAlbum author Nothing                    title public = do
-    time      <- liftIO getCurrentTime
-    let album = Album public time (toUrlIdent title) title author
-    aid       <- runDB $ insert album
-    return $ Entity aid album
+-- ** View Images
 
 flexImagesWidget :: Text -> Text -> [Entity Image] -> Widget
 flexImagesWidget author ident images = [whamlet|
@@ -418,7 +405,7 @@ flexImagesWidget' images = do
 |]
 
 -- XXX: Could use a join here too
-getImage :: Text -> Text -> Int -> Handler (Entity Album, Entity Image, [Entity User])
+getImage :: Text -> Text -> Int -> Handler ImageInfo
 getImage author ident nth = runDB $ do
     album  <- getBy404 $ UniqueAlbum author ident
     image  <- getBy404 $ UniqueImage (entityKey album) nth
@@ -432,9 +419,49 @@ getImageById iid = runDB $ do
     people <- getImagePeople iid
     return (Entity (imageAlbum image) album, Entity iid image, people)
 
+-- getImagePeople :: ImageId -> m [(PersonInImage, Entity User)]
 getImagePeople iid = do
-    peopleIds <- map (personInImageUser . entityVal) <$> selectList [PersonInImageImg ==. iid] []
-    selectList [UserId <-. peopleIds] [Asc UserUsername]
+    piis <- selectList [PersonInImageImg ==. iid] []
+    let people = map entityVal piis
+    zip people <$> selectList [UserId <-. map personInImageUser people] [Asc UserUsername]
+
+-- ** Access control
+    
+-- publishIfAcked :: ImageId -> m ()
+publishIfAcked iid = do
+    piis <- selectList [PersonInImageImg ==. iid] []
+    all ((== Just True) . personInImagePublishable . entityVal) piis
+        `when` update iid [ImagePublic =. True]
+
+-- | The result type looks like a monster, but actually it's just
+-- @(form_result, personInImages)@.
+runImagePublishAckForm :: UserId -> Handler (((FormResult [(PersonInImageId, Maybe Bool)], Widget), Enctype), [Entity PersonInImage])
+runImagePublishAckForm uid = do
+    let runForm = do
+            acks <- runDB $ selectList [ PersonInImageUser ==. uid, PersonInImagePublishable ==. Nothing]
+                                       [ Asc PersonInImageImg ]
+            form <- runFormPost $ renderBootstrap2 $ sequenceA $ map ackForm acks
+            return (form, acks)
+
+    x@(((res,_),_), piis) <- runForm
+    case res of
+        FormSuccess xs -> do runDB $ mapM_ (uncurry updatePublishable) xs
+                             runDB $ mapM_ (publishIfAcked . personInImageImg . entityVal) piis
+                             runForm
+        _ -> return x
+  where
+    ackForm (Entity k v) = (k, ) <$> aopt (ackField v) "" Nothing
+    updatePublishable k status = update k [PersonInImagePublishable =. status]
+
+ackField :: PersonInImage -> Field Handler Bool
+ackField v = boolField' { fieldView = \theId name attrs val isReq -> [whamlet|
+<div.clearfix.ack>
+  <img style="float:left" src=@{ThumbByIdR $ personInImageImg v}>
+  <div .controls .clearfix>^{fieldView boolField' theId name attrs val isReq}
+|] }
+    where
+        boolField' :: Field Handler Bool
+        boolField' = boolField
 
 -- * Misc.
 
