@@ -193,6 +193,15 @@ instance YesodAuthAccount (AccountPersistDB App User) App where
 ^{renderForm form (tm resetPasswordR) (submitI Msg.SendPasswordResetEmail)}
 |]
 
+    unregisteredLogin u = do
+        tm <- getRouteToParent
+        lift $ defaultLayout $ do
+            setTitleI Msg.MsgEmailUnverified
+            [whamlet|<h1>Kirjautuminen epäonnistui|] -- TODO i18n
+            [whamlet|<p>_{Msg.MsgEmailUnverified}|]
+            form <- liftHandlerT $ runFormPost $ renderBootstrap2 $ resendVerifyEmailForm (username u)
+            renderForm form (tm resendVerifyR) (submitI Msg.MsgResendVerifyEmail)
+
 -- XXX: pull request to yesod-auth-account
 finnishAccountMsg :: Msg.AccountMsg -> T.Text
 finnishAccountMsg Msg.MsgUsername = "Käyttäjänimi"
@@ -205,7 +214,10 @@ finnishAccountMsg Msg.MsgEmailVerified = "Sahköpostiosoitteesi on nyt varmistet
 finnishAccountMsg Msg.MsgEmailUnverified = "Sähköpostiosoitettasi ei ole vielä varmistettu."
 
 instance AccountSendEmail App where
-    -- TODO Add email support
+#if PRODUCTION
+    sendVerifyEmail u email url = undefined -- TODO (use mime-mail?)
+    sendNewPasswordEmail u email url = undefined -- TODO
+#endif
 
 isAuthRoute :: Maybe (Route App) -> Bool
 isAuthRoute (Just (AuthR _)) = True

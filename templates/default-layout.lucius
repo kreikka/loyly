@@ -34,12 +34,16 @@ a:hover {
   margin:0.5em 0;
 }
 .alert-success {
-  background:rgba(113, 230, 113, 0.73);
+  background:rgba(113, 230, 113, 0.7);
   border:1px solid rgb(0, 150, 0);
 }
 .alert-error {
-  background:rgba(230, 183, 113, 0.73);
+  background:rgba(230, 183, 113, 0.7);
   border:1px solid rgb(150, 72, 0);
+}
+.alert-info {
+  background:rgba(181,181,255, 0.7);
+  border:1px solid blue;
 }
 /* }}} */
 
@@ -104,45 +108,51 @@ a:hover {
   min-width:30em;
   max-width:45em;
   margin-right:1em;
-}
-.form .control-group {
-  margin-top:1em;
-}
-.control-label {
-  float:left;
-}
-.form .controls {
-  margin-left:14em;
-  padding:1px; /* input[type=date] fix? */
-}
-input[type*=text],
-input[type*=email],
-textarea {
-  width:100%;
-}
-input, textarea {
-  border-color:rgba(165, 42, 42, 0.14);
-  padding:0.1em 0.3em;
-}
-.form .control-group.required .control-label:after {
-  content:' *';
-  color:red;
-}
-.form .radio div {
-  margin:0.4em 0 0 0.3em;
-}
-.form .radio input {
-  margin-right:0.3em;
-}
-.form-actions {
-  border-top:1px solid gray;
-  background:rgba(121,39,0,0.1);
-  margin-top:1em;
-  padding:1em 0.5em 1em 15em;
-}
-.error .help-block {
-  color:red;
-  font-size:90%;
+
+  .control-label {
+    float:left;
+    margin-top:1em;
+  }
+  .controls {
+    margin-left:14em;
+    margin-top:1em;
+    padding:1px; /* input[type=date] fix? */
+  }
+  .control-group.required .control-label:after {
+    content:' *';
+    color:red;
+  }
+  .control-label:empty, .control-label:empty + * {
+    display:none;
+  }
+  .radio div {
+    margin:0.4em 0 0 0.3em;
+  }
+  .radio input {
+    margin-right:0.3em;
+  }
+  .form-actions {
+    border-top:1px solid gray;
+    background:rgba(121,39,0,0.1);
+    margin-top:1em;
+    padding:1em 0.5em 1em 15em;
+  }
+  .error .help-block {
+    color:red;
+    font-size:90%;
+  }
+  input[type*=text],
+  input[type*=email],
+  textarea {
+    width:100%;
+  }
+  input[type*=text],
+  input[type*=email],
+  input[type*=date],
+  textarea {
+    border-color:rgba(165, 42, 42, 0.14);
+    padding:0.1em 0.3em;
+  }
 }
 /* }}}  */
 

@@ -6,6 +6,8 @@
 
 /                    HomeR          GET
 /members             MembersR       GET POST
+/me                  ProfileR       GET
+/profiles/#Text      PublicProfileR GET
 /activities          ActivitiesR    GET
 /association         AssociationR   GET
 /privacy-policy      PrivacyPolicyR GET

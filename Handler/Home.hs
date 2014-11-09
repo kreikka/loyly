@@ -26,6 +26,8 @@ import           Text.Pandoc hiding (Image)
 import           Text.Printf
 import           Database.Persist.Sql (fromSqlKey)
 import           Yesod.Markdown
+import           Yesod.Auth.Account (setPasswordR, newPasswordForm, resetPasswordR)
+import qualified Yesod.Auth.Message as Msg
 
 
 homeTitle :: MonadWidget m => m ()
@@ -40,7 +42,7 @@ getHomeR =
 getMembersR, postMembersR :: Handler Html
 getMembersR  = postMembersR
 postMembersR = do
-    ((result, formWidget), formEnctype) <- runFormPost memberForm
+    form@((result, _), _) <- runFormPost . memberForm =<< lookupGetParam "email"
 
     case result of
         FormSuccess res -> do
@@ -48,6 +50,8 @@ postMembersR = do
             setMessage $ toHtml $ "Tervetuloa saunomaan, " <> memberName res
             redirect MembersR
         _ -> return ()
+
+    maid <- maybeAuthId
 
     defaultLayout $ do
         setTitle "Jäsenet ja liittyminen"
@@ -71,11 +75,11 @@ getPrivacyPolicyR =
         setTitle "Tietosuojaseloste"
         $(widgetFile "privacy-policy")
 
-memberForm :: Form Member
-memberForm = renderBootstrap2 $ Member False
+memberForm :: Maybe Text -> Form Member
+memberForm memail = renderBootstrap2 $ Member False
     <$> areq textField "Koko nimi" Nothing
     <*> areq textField "Kotikunta" Nothing
-    <*> areq (checkM mailNotTaken emailField) "Sähköposti" Nothing
+    <*> areq (checkM mailNotTaken emailField) "Sähköposti" memail
     <*> areq checkBoxField "Olen HYY:n jäsen" Nothing
     <*> aopt dayField "Syntymäaika (ei pakollinen)" Nothing
     <*> areq (radioFieldList genderSelections) "Sukupuoli" Nothing
@@ -182,6 +186,26 @@ recentBlogPosts mn = do
     <li>
       <a href=@{BlogPostR (blogPostIdent post)}>#{blogPostTitle post}
 |]
+
+-- * Profile
+
+getProfileR :: Handler Html
+getProfileR = do
+    u <- requireAuthId
+    Entity _ user <- runDB $ getBy404 $ UniqueUsername u
+    mmemb <- runDB $ getBy $ UniqueMember $ userEmail user
+    passForm <- runFormPost $ renderBootstrap2 $ newPasswordForm u (userResetPasswordKey user)
+    defaultLayout $ do
+        setTitle "Löylyprofiili"
+        $(widgetFile "profile")
+
+getPublicProfileR :: Text -> Handler Html
+getPublicProfileR u = do
+    Entity _ user <- runDB $ getBy404 $ UniqueUsername u
+    Entity _ memb <- runDB $ getBy404 $ UniqueMember $ userEmail user
+    defaultLayout $ do
+        setTitle $ toHtml $ "Löylyprofiili: " <> userUsername user
+        $(widgetFile "profile-public")
 
 -- * Gallery
 
