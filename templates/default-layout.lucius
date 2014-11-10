@@ -63,7 +63,7 @@ a:hover {
      margin:0.5em 0 0 0.5em;
      br { display:none; }
   }
-  .blog ul {
+  ul.blog {
     list-style:none;
     margin-top:0;
   }
@@ -83,7 +83,7 @@ a:hover {
     text-decoration:none;
     border-right-style:solid;
     border-right-width:2px;
-    color: rgb(111,111,111);
+    color: rgb(34,34,34);
   }
   a:hover, a.active {
     transition: background-color .5s ease-out;
@@ -108,6 +108,20 @@ a:hover {
   a:hover, a.active {
     color: rgb(110,110,110);
     background: rgba(170,170,170, 0.2);
+  }
+}
+.color-four {
+  a { border-color:rgb(183,190,0); }
+  a:hover, a.active {
+    color: rgb(111,116,0);
+    background: rgba(183,190,0, 0.2);
+  }
+}
+.color-five {
+  a { border-color:rgb(63, 187, 68); }
+  a:hover, a.active {
+    color: rgb(0,100,4);
+    background: rgba(63,187,68, 0.2);
   }
 }
 
@@ -203,6 +217,8 @@ a:hover {
 .bold {
   font-weight:bold;
 }
+.italic { font-style:italic; }
+.normal {font-style:normal; }
 .img-full {
   width:100%;
 }

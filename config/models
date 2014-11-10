@@ -58,3 +58,9 @@ PersonInImage
     user UserId
     publishable Bool Maybe -- Nothing if not acked by user, or Just "can publish"
     UniquePersonImage img user
+
+Calendar
+    owner UserId
+    title Text
+    remind Text -- remind (1) content
+    UniqueCalendar owner title

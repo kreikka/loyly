@@ -1,0 +1,10 @@
+<h1>Tapahtumakalenteri
+
+^{remindRender allCurrent}
+
+<p>
+  Kalenterit:
+  $forall Entity _ cal <- cals
+    #{calendarTitle cal}
+
+^{renderForm MsgNewCalendarTitle form CalendarR (submitI MsgNewCalendarDo)}

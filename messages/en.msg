@@ -8,3 +8,6 @@ UpdateAlbum: Muokkaa albumia
 UpdateImageInfo: Päivitä kuvan tiedot
 
 ImagePublishAck: Päivitä julkaisuoikeudet
+
+NewCalendarTitle: Uusi kalenteri
+NewCalendarDo: Luo kalenteri

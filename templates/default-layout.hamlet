@@ -8,33 +8,36 @@
       <li>
         <a :route == Just HomeR:.active href=@{HomeR}>Etusivu
       <li>
-        <a :route == Just ActivitiesR:.active href=@{ActivitiesR}>Toiminta
-      <li>
-        <a :route == Just BlogR:.active href=@{BlogR}>Saunablogi
-      <li>
-        <a :route == Just GalleryR:.active href=@{GalleryR}>Galleria
-      <li>
         <a :route == Just AssociationR:.active href=@{AssociationR}>Yhdistys
+      <li>
+        <a :route == Just ActivitiesR:.active href=@{ActivitiesR}>Toiminta
       <li>
         <a :route == Just MembersR:.active href=@{MembersR}>Jäsenet ja liittyminen
       <li>
-        <a :route == Just PrivacyPolicyR:.active href=@{PrivacyPolicyR}>Tietosuojaseloste
+        <a :route == Just GalleryR:.active href=@{GalleryR}>Galleria
+    <ul.nav.color-two.blog.italic>
+      <li.normal>
+        <a :route == Just BlogR:.active href=@{BlogR}>Saunablogi
+      ^{recentBlogPosts (Just 3)}
+
+    <ul.nav.color-five>
+      <li>
+        <a :route == Just CalendarR:.active href=@{CalendarR}>Tapahtumakalenteri
+      ^{remindNextWeeks}
+
+    <ul.nav.color-four>
       $maybe u <- maid
         <li>
           <a :route == Just ProfileR:.active href=@{ProfileR}>Profiili (<i>#{u}</i>)
+        <li.italic>
+          <a :isAuthRoute route:.active href=@{AuthR LogoutR}>Kirjaudu ulos
       $nothing
         <li>
           <a :isAuthRoute route:.active href=@{AuthR LoginR}>_{Msg.LoginTitle}
 
-    <div.blog>
-      <small>Viimeksi saunablogissa
-      <ul.nav.color-two>
-        ^{recentBlogPosts (Just 3)}
-
-    $maybe _ <- maid
-      <ul.nav .color-three>
-        <li>
-          <a :isAuthRoute route:.active href=@{AuthR LogoutR}>Kirjaudu ulos
+    <ul.nav.color-three.other>
+      <li>
+        <a :route == Just PrivacyPolicyR:.active href=@{PrivacyPolicyR}>Tietosuojaseloste
 
   <div #main role="main">
     $maybe msg <- mmsg

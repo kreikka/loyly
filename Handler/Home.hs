@@ -5,6 +5,7 @@
 module Handler.Home where
 
 import           Import
+import           RemindHelpers
 import qualified Data.ByteString.Lazy as B
 import qualified Data.ByteString.Builder as B
 import           Data.Conduit
@@ -536,3 +537,44 @@ toUrlIdent = T.map f . T.unwords . T.words . T.filter (not . isPunctuation)
   where
     f c | isSpace c = '-'
         | otherwise = toLower c
+
+-- | Like requireAuthId but to UserId
+requireUserId :: Handler UserId
+requireUserId = requireAuthId >>= fmap entityKey . runDB . getBy404 . UniqueUsername
+
+
+-- * Calendar
+
+getCalendarR, postCalendarR :: Handler Html
+getCalendarR  = postCalendarR
+postCalendarR = do
+    cals <- runDB $ selectList [] []
+
+    form <- runFormPost calendarForm
+    case form of
+        ((FormSuccess c,_),_) -> do
+            k <- runDB (insert c)
+            setMessage "Kalenteri luotu"
+            redirect CalendarR
+        _ -> return ()
+
+    allCurrent <- liftIO $ remindRun ["-c+4", "-m", "-w110,0,0"]
+                         $ T.unlines $ calendarRemind . entityVal <$> cals
+    defaultLayout $ do
+        setTitle "Tapahtumakalenteri"
+        $(widgetFile "calendar-home")
+
+calendarForm :: Form Calendar
+calendarForm = renderBootstrap2 $ Calendar
+    <$> lift requireUserId
+    <*> areq textField "Otsikko" Nothing
+    <*> fmap unTextarea (areq textareaField "Merkinnät" Nothing)
+
+remindRender :: RemindRes -> Widget
+remindRender x = [whamlet|$newline always
+$case x
+    $of Right res
+        <pre style="font-size:65%">#{res}
+    $of Left err
+        <div.alert.alert-error>#{err}
+|]

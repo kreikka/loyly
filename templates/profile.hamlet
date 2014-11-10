@@ -17,7 +17,7 @@ $maybe Entity _ m <- mmemb
   $else
     <div .alert .alert-info>
       Jäsenhakemuksesi odottaa hyväksymistä. Hakemuksesi käsitellään seuraavassa
-      hallituksen kokouksessa. Teit hakemukset #{show $ memberMemberSince m}.
+      hallituksen kokouksessa. Teit hakemuksen #{show $ memberMemberSince m}.
   $if memberHyyMember m
     <b>Olet
     HYY:n jäsen.
