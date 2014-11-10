@@ -548,8 +548,6 @@ requireUserId = requireAuthId >>= fmap entityKey . runDB . getBy404 . UniqueUser
 getCalendarR, postCalendarR :: Handler Html
 getCalendarR  = postCalendarR
 postCalendarR = do
-    cals <- runDB $ selectList [] []
-
     form <- runFormPost calendarForm
     case form of
         ((FormSuccess c,_),_) -> do
@@ -558,8 +556,8 @@ postCalendarR = do
             redirect CalendarR
         _ -> return ()
 
-    allCurrent <- liftIO $ remindRun ["-c+4", "-m", "-w110,0,0"]
-                         $ T.unlines $ calendarRemind . entityVal <$> cals
+    allCurrent <- remindRun ["-c+4", "-m", "-w110,0,0"] =<< combineReminds
+    cals       <- runDB $ selectList [] []
     defaultLayout $ do
         setTitle "Tapahtumakalenteri"
         $(widgetFile "calendar-home")
