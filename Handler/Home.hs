@@ -542,15 +542,18 @@ toUrlIdent = T.map f . T.unwords . T.words . T.filter (not . isPunctuation)
 requireUserId :: Handler UserId
 requireUserId = requireAuthId >>= fmap entityKey . runDB . getBy404 . UniqueUsername
 
+-- | Like requireAuthId but to UserId
+maybeUserId :: Handler (Maybe UserId)
+maybeUserId = maybeAuthId >>= maybe (return Nothing) (fmap (fmap entityKey) . runDB . getBy . UniqueUsername)
 
 -- * Calendar
 
 getCalendarR, postCalendarR :: Handler Html
 getCalendarR  = postCalendarR
 postCalendarR = do
-    form <- runFormPost calendarForm
-    case form of
-        ((FormSuccess c,_),_) -> do
+    mform <- maybe (return Nothing) (fmap Just . runFormPost . calendarForm) =<< maybeUserId
+    case mform of
+        Just ((FormSuccess c,_),_) -> do
             k <- runDB (insert c)
             setMessage "Kalenteri luotu"
             redirect CalendarR
@@ -558,14 +561,16 @@ postCalendarR = do
 
     allCurrent <- remindRun ["-c+4", "-m", "-w110,0,0"] =<< combineReminds
     cals       <- runDB $ selectList [] []
+    let calWidget = maybe mempty
+            (\f -> renderForm MsgNewCalendarTitle f CalendarR (submitI MsgNewCalendarDo))
+            mform
     defaultLayout $ do
         setTitle "Tapahtumakalenteri"
         $(widgetFile "calendar-home")
 
-calendarForm :: Form Calendar
-calendarForm = renderBootstrap2 $ Calendar
-    <$> lift requireUserId
-    <*> areq textField "Otsikko" Nothing
+calendarForm :: UserId -> Form Calendar
+calendarForm u = renderBootstrap2 $ Calendar u
+    <$> areq textField "Otsikko" Nothing
     <*> fmap unTextarea (areq textareaField "Merkinnät" Nothing)
 
 remindRender :: RemindRes -> Widget
