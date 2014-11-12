@@ -1,9 +1,15 @@
+/* vim:set foldmethod=marker foldlevel=0: */
+
+/* {{{ Defaults */
 *, *:before, *:after {
   box-sizing:border-box;
 }
-.clearfix {
-  overflow:auto;
+img {
+  width:100%;
 }
+/* }}} */
+
+/* {{{ default-layout */
 body {
    background:whitesmoke;
 }
@@ -19,11 +25,27 @@ body {
   padding:1em 0.5em;
   color:gray;
 }
+/* }}} */
+
+/* {{{ util classes */
+.clearfix {
+  overflow:auto;
+}
 .toppush {
   height:4em;
   width:100%;
 }
+.light {
+  color:rgb(111,111,111);
+}
+.bold {
+  font-weight:bold;
+}
+.italic { font-style:italic; }
+.normal {font-style:normal; }
+/* }}} */
 
+/* {{{ a */
 a {
   color: rgb(0, 69, 214);
   text-decoration:none;
@@ -31,6 +53,7 @@ a {
 a:hover {
   text-decoration:underline;
 }
+/* }}} */
 
 /* {{{ Alerts */
 .alert {
@@ -211,17 +234,7 @@ a:hover {
 }
 /* }}} */
 
-.light {
-  color:rgb(111,111,111);
-}
-.bold {
-  font-weight:bold;
-}
-.italic { font-style:italic; }
-.normal {font-style:normal; }
-.img-full {
-  width:100%;
-}
+/* {{{ images (gallery) */
 .images {
   display:flex;
   flex-flow: row wrap;
@@ -230,3 +243,4 @@ a:hover {
 .images img {
   margin:0.5em 0.2em;
 }
+/* }}} */

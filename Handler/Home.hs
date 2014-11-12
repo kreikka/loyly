@@ -6,7 +6,6 @@ module Handler.Home where
 
 import           Import
 import           RemindHelpers
-import qualified Data.ByteString.Lazy as B
 import qualified Data.ByteString.Builder as B
 import           Data.Conduit
 import qualified Data.Conduit.List as CL
@@ -22,7 +21,8 @@ import qualified System.FilePath as F
 import qualified System.Directory
 import qualified System.Process as P
 import           System.Exit (ExitCode(..))
-import           Text.Pandoc hiding (Image)
+import qualified Text.Pandoc as Pandoc
+import qualified Text.Pandoc.UTF8 as Pandoc (toStringLazy) -- strips BOM
 import           Text.Printf
 import           Database.Persist.Sql (fromSqlKey)
 import           Yesod.Markdown
@@ -137,45 +137,52 @@ postBlogR = do
         setTitle "Saunablogi"
         $(widgetFile "blog-home")
 
-handleBlogPost :: (FileInfo, Bool, Text, Text) -> Handler ()
-handleBlogPost (fi, overwrite, editor, _) = do
-    markdown <- fmap (Markdown . decodeUtf8 . B.toStrict . B.toLazyByteString) $ fileSource fi $$ CL.foldMap B.byteString
-
-    let doc@(Pandoc meta _) = parseMarkdown yesodDefaultReaderOptions markdown
-        rendered   = writePandocTrusted yesodDefaultWriterOptions doc
-        tags       = maybe [] getTags $ lookupMeta "tags" meta
-        title      = T.pack $ concatMap inlineToString (docTitle meta)
-        authors    = map (T.pack . concatMap inlineToString) (docAuthors meta)
-        ident      = toUrlIdent title
-
-    if T.null ident then setMessage "title-metakenttä ei voi olla tyhjä"
-                    else do
-
-        mp   <- runDB $ getBy $ UniqueBlogPost ident
-        time <- liftIO getCurrentTime
-
-        case mp of
-            Nothing         -> do _ <- runDB $ insert $ BlogPost ident title authors tags [(time, editor)] markdown rendered
-                                  setMessage "Postaus lisätty."
-                                  redirect $ BlogPostR ident
-            Just (Entity k v)
-                | overwrite -> do runDB (replace k v { blogPostTitle    = title
-                                                     , blogPostAuthors  = authors
-                                                     , blogPostTags     = tags
-                                                     , blogPostLog      = blogPostLog v ++ [(time, editor)]
-                                                     , blogPostMarkdown = markdown
-                                                     , blogPostRendered = rendered
-                                                     })
-                                  setMessage "Postaus päivitetty."
-                                  redirect $ BlogPostR ident
-                | otherwise -> return ()
-
 getBlogPostR :: Text -> Handler Html
 getBlogPostR ident = do
     Entity _ BlogPost{..} <- runDB $ getBy404 $ UniqueBlogPost ident
     defaultLayout $ do
         setTitle $ toHtml blogPostTitle
         $(widgetFile "blog-post")
+
+handleBlogPost :: (FileInfo, Bool, Text, Text) -> Handler ()
+handleBlogPost (fi, overwrite, editor, _) = do
+    time <- liftIO getCurrentTime
+    bs <- fmap B.toLazyByteString $ fileSource fi $$ CL.foldMap B.byteString
+
+    let md_str = Pandoc.toStringLazy bs -- strips BOM if present
+        md     = Markdown (T.pack md_str)
+
+    let readerOptions = yesodDefaultReaderOptions
+            { Pandoc.readerExtensions = Pandoc.pandocExtensions }
+        writerOptions = yesodDefaultWriterOptions
+            { Pandoc.writerExtensions = Pandoc.pandocExtensions }
+
+        doc@(Pandoc.Pandoc meta _) = Pandoc.readMarkdown readerOptions md_str
+        title = T.pack $ concatMap inlineToString (Pandoc.docTitle meta)
+
+        post = BlogPost
+            { blogPostIdent    = toUrlIdent title
+            , blogPostTitle    = title
+            , blogPostAuthors  = map (T.pack . concatMap inlineToString) (Pandoc.docAuthors meta)
+            , blogPostTags     = getTags meta
+            , blogPostLog      = [(time, editor)]
+            , blogPostMarkdown = md
+            , blogPostRendered = writePandocTrusted writerOptions doc
+            }
+
+    if T.null (blogPostIdent post)
+        then setMessage "title-metakenttä ei voi olla tyhjä"
+        else saveBlogPost overwrite post
+
+saveBlogPost :: Bool -> BlogPost -> Handler ()
+saveBlogPost overwrite p = do
+    mp <- runDB $ getByValue p
+    case mp of
+        Nothing                       -> void . runDB $ insert p
+        Just (Entity k v) | overwrite -> void . runDB $ replace k p { blogPostLog = blogPostLog p ++ blogPostLog v }
+                          | otherwise -> return ()
+    setMessage $ maybe "Postaus lisätty" (\_ -> "Postaus päivitetty.") mp
+    redirect $ BlogPostR (blogPostIdent p)
 
 -- * Profile
 
@@ -514,29 +521,33 @@ thumbDir = "thumbs"
 toImageFile :: Int -> String
 toImageFile = printf "%03d"
 
-inlineToString :: Inline -> String
-inlineToString x = case x of
-    Str s    -> s
-    Space    -> " "
-    Code _ s -> s
-    _        -> ""
-
-getTags :: MetaValue -> [Text]
-getTags (MetaString s)    = [T.pack s]
-getTags (MetaList xs)     = mapMaybe unMetaText xs
-getTags _                 = []
-
-unMetaText :: MetaValue -> Maybe Text
-unMetaText (MetaString s)   = Just $ T.pack s
-unMetaText (MetaInlines xs) = Just $ T.pack $ concatMap (inlineToString) xs
-unMetaText _                = Nothing
-
 -- | space -> '-', punctuation removed
 toUrlIdent :: Text -> Text
 toUrlIdent = T.map f . T.unwords . T.words . T.filter (not . isPunctuation)
   where
     f c | isSpace c = '-'
         | otherwise = toLower c
+
+-- ** Pandoc-specific
+
+inlineToString :: Pandoc.Inline -> String
+inlineToString x = case x of
+    Pandoc.Str s    -> s
+    Pandoc.Space    -> " "
+    Pandoc.Code _ s -> s
+    _               -> ""
+
+getTags :: Pandoc.Meta -> [Text]
+getTags = maybe [] go . Pandoc.lookupMeta "tags"
+  where
+    go (Pandoc.MetaString s) = [T.pack s]
+    go (Pandoc.MetaList xs)  = mapMaybe unMetaText xs
+    go _                     = []
+
+unMetaText :: Pandoc.MetaValue -> Maybe Text
+unMetaText (Pandoc.MetaString s)   = Just $ T.pack s
+unMetaText (Pandoc.MetaInlines xs) = Just $ T.pack $ concatMap (inlineToString) xs
+unMetaText _                       = Nothing
 
 -- | Like requireAuthId but to UserId
 requireUserId :: Handler UserId
@@ -554,7 +565,7 @@ postCalendarR = do
     mform <- maybe (return Nothing) (fmap Just . runFormPost . calendarForm) =<< maybeUserId
     case mform of
         Just ((FormSuccess c,_),_) -> do
-            k <- runDB (insert c)
+            _k <- runDB (insert c)
             setMessage "Kalenteri luotu"
             redirect CalendarR
         _ -> return ()
