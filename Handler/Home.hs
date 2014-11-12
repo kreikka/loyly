@@ -538,15 +538,14 @@ inlineToString x = case x of
     _               -> ""
 
 getTags :: Pandoc.Meta -> [Text]
-getTags = maybe [] go . Pandoc.lookupMeta "tags"
+getTags = maybe (error "tags-kenttää ei löytynyt") go . Pandoc.lookupMeta "tags"
   where
-    go (Pandoc.MetaString s) = [T.pack s]
-    go (Pandoc.MetaList xs)  = mapMaybe unMetaText xs
-    go _                     = []
+    go (Pandoc.MetaInlines xs) = map (T.pack . inlineToString) xs
+    go x                       = error ("tags-kentäksi odotettiin MetaInlines, mutta tuli: " ++ show x)
 
 unMetaText :: Pandoc.MetaValue -> Maybe Text
 unMetaText (Pandoc.MetaString s)   = Just $ T.pack s
-unMetaText (Pandoc.MetaInlines xs) = Just $ T.pack $ concatMap (inlineToString) xs
+unMetaText (Pandoc.MetaInlines xs) = Just $ T.pack $ concatMap inlineToString xs
 unMetaText _                       = Nothing
 
 -- | Like requireAuthId but to UserId
