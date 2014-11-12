@@ -1,6 +1,14 @@
 
 <h1>#{blogPostTitle}
-<div.light>
-  Laatija(t): <i>#{T.intercalate ", " blogPostAuthors}</i>
+<div.light.padleft>
+  <i>&mdash; #{T.intercalate ", " blogPostAuthors},
+  \ ^{prettyDate $ fst $ L.last blogPostLog}.#
+  $if not (null blogPostTags)
+    \ #
+    <code>[#{T.intercalate ", " blogPostTags}]
+  $if length blogPostLog > 1
+    \ #
+    $with (t, u) <- L.head blogPostLog
+      <small>(Viimeksi muokkasi #{u}, ^{prettyDate t})
 
 #{blogPostRendered}

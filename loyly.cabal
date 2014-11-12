@@ -16,6 +16,7 @@ library
                      Foundation
                      Import
                      RemindHelpers
+                     Mixins
                      Model
                      Settings
                      Settings.StaticFiles
@@ -76,6 +77,9 @@ library
                  , yesod-markdown                >= 0.9.3      && < 1.0
                  , filepath
                  , process
+                 , colour                        >= 2.3
+                 , word8
+                 , friendly-time
 
     -- see https://github.com/yesodweb/yesod/issues/814
     if !os(windows)

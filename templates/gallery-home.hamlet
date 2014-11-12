@@ -4,7 +4,7 @@
   $forall Entity _ Album{..} <- albums
     <li>
       <a href=@{AlbumR albumAuthor albumIdent}>#{albumTitle}
-      \ (#{show albumDate})
+      \ (^{prettyDate albumDate})
 <p>
   Galleriassa on #{numImages} kuvaa,
   joista #{numPrivate} yksityisiä#

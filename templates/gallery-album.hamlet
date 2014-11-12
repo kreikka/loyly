@@ -2,7 +2,7 @@
 <h1>#{albumTitle}
 ^{flexImagesWidget albumAuthor albumIdent images}
 <p>
-  Laatinut #{albumAuthor} (#{show albumDate}). #
+  Laatinut #{albumAuthor} (^{prettyDate albumDate}). #
   $if albumPublic
     Albumi on <b>julkinen</b>. #
   $else

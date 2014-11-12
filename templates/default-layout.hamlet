@@ -1,48 +1,43 @@
-<div.container>
-  <header #navbar>
+<div#container>
+  <header#navbar>
     <div.brand.gamma.hug href=@{HomeR}>
       Helsingin<br>
       Akateemiset<br>
       Löylyttelijät&nbsp;ry
-    <ul.nav.color-one>
-      <li>
-        <a :route == Just HomeR:.active href=@{HomeR}>Etusivu
-      <li>
-        <a :route == Just AssociationR:.active href=@{AssociationR}>Yhdistys
-      <li>
-        <a :route == Just ActivitiesR:.active href=@{ActivitiesR}>Toiminta
-      <li>
-        <a :route == Just MembersR:.active href=@{MembersR}>Jäsenet ja liittyminen
-      <li>
-        <a :route == Just GalleryR:.active href=@{GalleryR}>Galleria
-    <ul.nav.color-two.blog.italic>
-      <li.normal>
-        <a :route == Just BlogR:.active href=@{BlogR}>Saunablogi
+
+    <!-- Yhdistys -->
+    <ul.nav.color-0>
+      <li.title :route == Just HomeR:.active><a href=@{HomeR}>Yhdistys</a>
+      <li :route == Just AssociationR:.active><a href=@{AssociationR}>Hallitus</a>
+      <li :route == Just ActivitiesR:.active><a href=@{ActivitiesR}>Toiminta</a>
+      <li :route == Just GalleryR:.active><a href=@{GalleryR}>Galleria</a>
+
+    <ul.nav.color-1>
+      <li.title :route == Just MembersR:.active><a href=@{MembersR}>Jäsenet ja liittyminen</a>
+      $maybe u <- maid
+        <li :route == Just ProfileR:.active><a href=@{ProfileR}>Profiili (<i>#{u}</i>)</a>
+        <li.italic :isAuthRoute route:.active><a href=@{AuthR LogoutR}>Kirjaudu ulos</a>
+      $nothing
+        <li :isAuthRoute route:.active><a href=@{AuthR LoginR}>_{Msg.LoginTitle}</a>
+
+    <!-- Blogi -->
+    <ul.nav.color-2.blog.italic>
+      <li.normal.title :route == Just BlogR:.active><a href=@{BlogR}>Saunablogi</a>
       ^{recentBlogPosts (Just 3)}
 
-    <ul.nav.color-five>
-      <li>
-        <a :route == Just CalendarR:.active href=@{CalendarR}>Tapahtumakalenteri
+    <!-- Tapahtumat -->
+    <ul.nav.color-3>
+      <li.title :route == Just CalendarR:.active><a href=@{CalendarR}>Tapahtumakalenteri</a>
       ^{remindNextWeeks}
 
-    <ul.nav.color-four>
-      $maybe u <- maid
-        <li>
-          <a :route == Just ProfileR:.active href=@{ProfileR}>Profiili (<i>#{u}</i>)
-        <li.italic>
-          <a :isAuthRoute route:.active href=@{AuthR LogoutR}>Kirjaudu ulos
-      $nothing
-        <li>
-          <a :isAuthRoute route:.active href=@{AuthR LoginR}>_{Msg.LoginTitle}
+    <!-- Muuta -->
+    <ul.nav.color-4.other>
+      <li :route == Just PrivacyPolicyR:.active><a href=@{PrivacyPolicyR}>Tietosuojaseloste</a>
 
-    <ul.nav.color-three.other>
-      <li>
-        <a :route == Just PrivacyPolicyR:.active href=@{PrivacyPolicyR}>Tietosuojaseloste
-
-  <div #main role="main">
+  <div#main role="main">
     $maybe msg <- mmsg
       <div .alert .alert-success #message>#{msg}
     ^{widget}
 
-  <footer #footer>
-    &copy #{extraCopyright $ appExtra $ settings master}
+<footer #footer>
+  &copy #{extraCopyright $ appExtra $ settings master}
