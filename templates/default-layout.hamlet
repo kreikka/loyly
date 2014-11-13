@@ -15,8 +15,7 @@
     <ul.nav.color-1>
       <li.title :route == Just MembersR:.active><a href=@{MembersR}>Jäsenet ja liittyminen</a>
       $maybe u <- maid
-        <li :route == Just ProfileR:.active><a href=@{ProfileR}>Profiili (<i>#{u}</i>)</a>
-        <li.italic :isAuthRoute route:.active><a href=@{AuthR LogoutR}>Kirjaudu ulos</a>
+        <li.bold :route == Just ProfileR:.active><a href=@{ProfileR}>Profiili (<i>#{u}</i>)</a>
       $nothing
         <li :isAuthRoute route:.active><a href=@{AuthR LoginR}>_{Msg.LoginTitle}</a>
 
@@ -32,7 +31,10 @@
 
     <!-- Muuta -->
     <ul.nav.color-4.other>
+      <li.title :route == Just HelpR:.active><a href=@{HelpR}>Apua</a>
       <li :route == Just PrivacyPolicyR:.active><a href=@{PrivacyPolicyR}>Tietosuojaseloste</a>
+      $maybe _ <- maid
+        <li.italic :isAuthRoute route:.active><a href=@{AuthR LogoutR}>Kirjaudu ulos</a>
 
   <div#main role="main">
     $maybe msg <- mmsg

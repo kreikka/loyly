@@ -21,7 +21,7 @@ h1, h2, h3 {
   #container {
     display:flex;
     flex-wrap:wrap;
-    margin:0 1em;
+    min-height:100vh;
   }
   #navbar {
     flex:0 0 15em;
@@ -36,7 +36,8 @@ h1, h2, h3 {
 #footer {
   width:100%;
   padding:1em 0.5em 1em;
-  ^{shadowTopNotInset "8px"};
+  background:#{darker02 themeBackground};
+  ^{shadowTop "8px"};
   color:#{bright03 themeText};
 }
 /* }}} */
@@ -95,6 +96,7 @@ a:hover {
 
 /* {{{ #navbar */
 #navbar {
+  background:#{darker01 themeBackground};
   .brand {
      text-decoration:none;
      font-family:serif;
@@ -209,6 +211,9 @@ a:hover {
   }
   .control-label:empty, .control-label:empty + * {
     display:none;
+  }
+  .error .control-label:empty + * {
+    display:block;
   }
   .radio div {
     margin:0.4em 0 0 0.3em;

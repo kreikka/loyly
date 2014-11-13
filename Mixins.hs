@@ -27,15 +27,14 @@ instance ToCss Color where
 rgba :: Word8 -> Word8 -> Word8 -> Float -> Color
 rgba r g b = withOpacity (sRGB24 r g b)
 
-bright03 :: Color -> Color
+bright03, bright01, darker01 :: Color -> Color
 bright03 = blend 0.3 (rgba 255 255 255 1)
-
 bright01 = blend 0.1 (rgba 255 255 255 1)
+darker01 = blend 0.1 (rgba 0 0 0 1)
+darker02 = blend 0.2 (rgba 0 0 0 1)
 
-themeText :: Color
+themeText, themeBackground :: Color
 themeText = rgba 50 50 50 1
-
-themeBackground :: Color
 themeBackground = rgba 235 235 235 1
 
 themeColors :: [Color]

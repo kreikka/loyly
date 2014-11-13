@@ -1,0 +1,27 @@
+<h1>Apua
+
+<h2>Blogi
+
+<p>
+  Blogipostaukset syötetään markdown-tiedostoina, jotka näyttävät suunnilleen
+  tältä:
+  <pre>
+    ---
+    author: Teh Author
+    title: An example post
+    date: 2014-10-16T11:43:29+0300
+    tags: one tag, another tag, a third tag
+    ---
+    \
+    Postauksen sisältö tähän.
+    \
+    Katso syntaksi
+    [täältä](<a href=http://johnmacfarlane.net/pandoc/demo/example9/pandocs-markdown.html>http://johnmacfarlane.net/pandoc/demo/example9/pandocs-markdown.html</a>).
+<p>
+  Postausta lisättäessä, jos tiedostossa oleva title-kenttä on jo käytössä, ei
+  postauksen lisääminen onnistu. Sen sijaan voit ylikirjoittaa nykyisen
+  postauksen saman title-kentän tiedostolla ruksaamalla switchin formista.
+<p>
+  Postauksia lisätäksesi sinun täytyy olla joko virallisesti jäsen ja
+  kirjautunut sisään, tai tietää salasana (ja <b>ei</b> olla kirjautunut
+  sisään).

@@ -64,6 +64,9 @@ getAssociationR = do
         setTitle "Yhdistys"
         $(widgetFile "association")
 
+getHelpR :: Handler Html
+getHelpR = defaultLayout $(widgetFile "help")
+
 getActivitiesR :: Handler Html
 getActivitiesR = do
     defaultLayout $ do
@@ -119,23 +122,35 @@ $if not $ null membsNotAppr
 getBlogR, postBlogR :: Handler Html
 getBlogR = postBlogR
 postBlogR = do
-    form@((res, _), _) <- runFormPost $ renderBootstrap2 $ (,,,)
-        <$> fileAFormReq "Markdown-tiedosto"
-        <*> areq checkBoxField "Päivitän postausta" Nothing
-        <*> areq textField "Kuka olet" Nothing
-        <*> areq textField "Salasana" Nothing
+    maid <- maybeAuthId
+    form@((res, _), _) <- runFormPost $ blogPostForm maid
 
     case res of
-        FormSuccess r@(_,_,_,pass) -> do
-            authorized <- (== pass) . extraBlogPass <$> getExtra
-            if authorized
-                then handleBlogPost r
-                else setMessage "Wäärä salasana"
-        _ -> return ()
+        FormSuccess r -> handleBlogPost r
+        _             -> return ()
 
     defaultLayout $ do
         setTitle "Saunablogi"
         $(widgetFile "blog-home")
+
+blogPostForm :: Maybe Text -> Form (FileInfo, Bool, Text)
+blogPostForm muser = renderBootstrap2 $ (,,)
+    <$> fileAFormReq "Markdown-tiedosto"
+    <*> areq checkBoxField "Päivitän postausta" Nothing
+    <*> maybe (areq textField "Kuka olet" Nothing
+            <* areq (checkM blogPass passwordField) "Salasana" Nothing)
+            (\u -> areq (checkM (\_ -> confirmedUser u) hiddenField) "" (Just "a")) muser
+    where
+        confirmedUser, blogPass :: Text -> Handler (Either Text Text)
+        blogPass got = do correct <- (== got) . extraBlogPass <$> getExtra
+                          return $ if correct then Right got else Left "Väärä salasana"
+
+        confirmedUser name = do
+            m <- runDB $ getBy404 (UniqueUsername name) >>= getBy404 . UniqueMember . userEmail . entityVal
+            return $ if not $ memberApproved $ entityVal m
+                then Left "Hakemustasi ei ole vielä hyväksytty. Vain varsinaiset jäsenet voivat päivittää blogia."
+                else Right name
+
 
 getBlogPostR :: Text -> Handler Html
 getBlogPostR ident = do
@@ -144,8 +159,8 @@ getBlogPostR ident = do
         setTitle $ toHtml blogPostTitle
         $(widgetFile "blog-post")
 
-handleBlogPost :: (FileInfo, Bool, Text, Text) -> Handler ()
-handleBlogPost (fi, overwrite, editor, _) = do
+handleBlogPost :: (FileInfo, Bool, Text) -> Handler ()
+handleBlogPost (fi, overwrite, editor) = do
     time <- liftIO getCurrentTime
     bs <- fmap B.toLazyByteString $ fileSource fi $$ CL.foldMap B.byteString
 
@@ -540,7 +555,7 @@ inlineToString x = case x of
 getTags :: Pandoc.Meta -> [Text]
 getTags = maybe (error "tags-kenttää ei löytynyt") go . Pandoc.lookupMeta "tags"
   where
-    go (Pandoc.MetaInlines xs) = map (T.pack . inlineToString) xs
+    go (Pandoc.MetaInlines xs) = filter (not . T.null) . T.split (==',') . T.pack $ concatMap inlineToString xs
     go x                       = error ("tags-kentäksi odotettiin MetaInlines, mutta tuli: " ++ show x)
 
 unMetaText :: Pandoc.MetaValue -> Maybe Text
