@@ -38,6 +38,8 @@ SECRETS="$DESTINATION/config/client_session_key.aes $DESTINATION/config/settings
 
 # Directories
 sudo mkdir -p $DESTINATION/config || true
+sudo mkdir -p $DESTINATION/static/gallery || true
+
 
 # Files
 cd $DIR/../
@@ -47,7 +49,7 @@ sudo mv $DESTINATION/config/mysettings.yml $DESTINATION/config/settings.yml
 
 # Permissions
 sudo chmod og-rwx $SECRETS
-sudo chown $USER $DESTINATION $DESTINATION/static/tmp $SECRETS
+sudo chown $USER $SECRETS $DESTINATION $DESTINATION/static/{tmp,gallery}
 
 # Binary
 sudo systemctl stop loyly || true  # stop if running
