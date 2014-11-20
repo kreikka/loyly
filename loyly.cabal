@@ -16,6 +16,7 @@ library
                      Foundation
                      Import
                      RemindHelpers
+                     Mixins
                      Model
                      Settings
                      Settings.StaticFiles
@@ -77,6 +78,9 @@ library
                  , mime-mail                     >= 0.4.5      && < 0.5
                  , filepath
                  , process
+                 , colour                        >= 2.3
+                 , word8
+                 , friendly-time
 
     -- see https://github.com/yesodweb/yesod/issues/814
     if !os(windows)

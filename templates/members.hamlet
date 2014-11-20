@@ -14,7 +14,7 @@
   kanavallemme #saunahali @IRCnet !
 
 $maybe _ <- maid
-  <p>
+  <div.alert.alert-success>
     Olet jäsen.
     \<a href=@{ProfileR}>Siirry profiilisi</a>.
 
@@ -29,4 +29,4 @@ $nothing
 
 <p>
   $forall Entity _ u <- users
-    <a href=@{PublicProfileR $ userUsername u}>#{userUsername u}
+    <a.user-block href=@{PublicProfileR $ userUsername u}>#{userUsername u}
