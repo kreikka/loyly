@@ -219,7 +219,8 @@ finnishAccountMsg Msg.MsgEmailVerified = "Sahköpostiosoitteesi on nyt varmistet
 finnishAccountMsg Msg.MsgEmailUnverified = "Sähköpostiosoitettasi ei ole vielä varmistettu."
 
 instance AccountSendEmail App where
-#if PRODUCTION
+#if DEVELOPMENT
+#else
     sendVerifyEmail user to url = do
         extra <- getExtra
         let fromAddr= Address Nothing $ extraEmail extra
@@ -236,7 +237,7 @@ instance AccountSendEmail App where
               , url
               ]
 
-    sendNewPasswordEmail user to url = undefined
+    sendNewPasswordEmail user to url = do
         extra <- getExtra
         let fromAddr= Address Nothing $ extraEmail extra
             toAddr  = Address Nothing to
