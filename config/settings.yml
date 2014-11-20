@@ -5,6 +5,7 @@ Default: &defaults
   copyright: copyright statement - TEST INSTANCE
   blog_password: saunahali
   gallery_root: "/tmp/images/"
+  email: placeholder
   #analytics: UA-YOURCODE
 
 Development:
@@ -19,5 +20,6 @@ Staging:
 Production:
   approot: "http://saunahali.funktionaali.com"
   port: 8500
+  email: "saunahali@gmail.com"
   copyright: Helsingin Akateemiset Löylyttelijät ry
   <<: *defaults
