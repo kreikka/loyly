@@ -70,6 +70,7 @@ data Extra = Extra
     , extraAnalytics :: Maybe Text -- ^ Google Analytics
     , extraBlogPass :: Text
     , extraGalleryRoot :: FilePath
+    , extraEmail       :: Text     -- ^ Email address for sending account stuff to users
     } deriving Show
 
 parseExtra :: DefaultEnv -> Object -> Parser Extra
@@ -78,3 +79,4 @@ parseExtra _ o = Extra
     <*> o .:? "analytics"
     <*> o .: "blog_password"
     <*> o .: "gallery_root"
+    <*> o .: "email"

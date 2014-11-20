@@ -4,6 +4,7 @@ module Foundation where
 import Prelude
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
 import Yesod
 import Yesod.Static
 import Yesod.Auth
@@ -24,6 +25,8 @@ import RemindHelpers
 import Text.Jasmine (minifym)
 import Text.Hamlet (hamletFile)
 import Yesod.Core.Types (Logger)
+import Network.Mail.Mime (Address(..), renderSendMail, simpleMail')
+
 
 -- | The site argument for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -217,9 +220,39 @@ finnishAccountMsg Msg.MsgEmailUnverified = "Sähköpostiosoitettasi ei ole viel�
 
 instance AccountSendEmail App where
 #if PRODUCTION
-    sendVerifyEmail u email url = undefined -- TODO (use mime-mail?)
-    sendNewPasswordEmail u email url = undefined -- TODO
+    sendVerifyEmail user to url = do
+        extra <- getExtra
+        let fromAddr= Address Nothing $ extraEmail extra
+            toAddr  = Address Nothing to
+            subject = "Saunahali: Vahvista sähköpostisi!"
+
+        liftIO $ renderSendMail $ simpleMail' toAddr fromAddr subject body
+      where
+          body = TL.fromStrict $ T.unlines 
+              [ "Tervetuloa Helsingin Akateemisten löylyttelijiöiden sivulle!"
+              , ""
+              , "Olet luonut käyttäjän " `T.append` user `T.append` " tälle sähköpostiosoitteelle ja se vaatii"
+              , "vahvistuksen osoitteessa: "
+              , url
+              ]
+
+    sendNewPasswordEmail user to url = undefined
+        extra <- getExtra
+        let fromAddr= Address Nothing $ extraEmail extra
+            toAddr  = Address Nothing to
+            subject = "Saunahali: Salasanan palautus!"
+
+        liftIO $ renderSendMail $ simpleMail' toAddr fromAddr subject body
+      where
+          body = TL.fromStrict $ T.unlines 
+              [ "Tervetuloa takaisin!"
+              , ""
+              , "Pyysit unohtuneen salasanan käyttäjälle `" `T.append` user `T.append` "`tälle sähköpostiosoitteelle."
+              , "Voit vaihtaa osoitteen täällä:"
+              , url
+              ]
 #endif
+
 
 isAuthRoute :: Maybe (Route App) -> Bool
 isAuthRoute (Just (AuthR _)) = True
