@@ -3,6 +3,7 @@ module Foundation where
 
 import Prelude
 import Data.Text (Text)
+import Data.Time
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import Yesod
@@ -22,9 +23,11 @@ import Settings.StaticFiles
 import Settings (widgetFile, Extra (..))
 import Model
 import RemindHelpers
+import Mixins
 import Text.Jasmine (minifym)
 import Text.Hamlet (hamletFile)
 import Yesod.Core.Types (Logger)
+import Data.Time.Format.Human
 import Network.Mail.Mime (Address(..), renderSendMail, simpleMail')
 
 
@@ -275,6 +278,37 @@ renderForm legend ((_, widget), enctype) action formActions = [whamlet|
   <div .form-actions>^{formActions}
 |]
 
+prettyDate :: UTCTime -> Widget
+prettyDate t = do
+    s <- liftIO $ humanReadableTimeI18N finnishLocale t
+    [whamlet|#{s}|]
+
+finnishLocale = defaultHumanTimeLocale
+    { justNow       = "juuri äsken"
+    , secondsAgo    = (++ " sekuntia sitten")
+    , oneMinuteAgo  = "minuutti sitten"
+    , minutesAgo    = (++ " minuuttia sitten")
+    , oneHourAgo    = "tunti sitten"
+    , aboutHoursAgo = \x -> "noin " ++ x ++ " tuntia sitten"
+    , at            = \n _ -> "viime " ++ (case n of
+                               0 -> "sunnuntaina"
+                               1 -> "maanantaina"
+                               2 -> "tiistaina"
+                               3 -> "keskiviikkona"
+                               4 -> "torstaina"
+                               5 -> "perjantaina"
+                               6 -> "lauantaina"
+                               7 -> "sunnuntaina"
+                               _ -> "ei ole päivä: " ++ show n
+                               )
+    , daysAgo      = (++ " päivää sitten")
+    , weekAgo      = (++ " viikko sitten")
+    , weeksAgo     = (++ " viikkoa sitten")
+    , onYear       = ("vuonna " ++)
+    -- , locale       = defaultTimeLocale
+    , dayOfWeekFmt = "%A klo %l:%M %p"
+    }
+
 -- | Get the 'Extra' value, used to hold data from the settings.yml file.
 getExtra :: Handler Extra
 getExtra = fmap (appExtra . settings) getYesod
@@ -288,7 +322,7 @@ recentBlogPosts mn = do
         selectList [] $ Desc BlogPostLog : maybe [] (return . LimitTo) mn
     [whamlet|
 $forall Entity _ post <- posts
-  <li>
-    $with route <- BlogPostR (blogPostIdent post)
-      <a :mr == Just route:.active href=@{route}>#{blogPostTitle post}
+  $with route <- BlogPostR (blogPostIdent post)
+    <li :mr == Just route:.active>
+      <a href=@{route}>#{blogPostTitle post}
 |]

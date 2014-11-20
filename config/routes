@@ -9,6 +9,7 @@
 /activities          ActivitiesR    GET
 /association         AssociationR   GET
 /privacy-policy      PrivacyPolicyR GET
+/help                HelpR          GET
 
 /me                  ProfileR       GET
 /profile/#Text       PublicProfileR GET

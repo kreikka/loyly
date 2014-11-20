@@ -12,12 +12,12 @@ $maybe Entity _ m <- mmemb
   $if memberApproved m
     Jäsenyytesi on voimassa.
     <b>Jäsen alkaen:
-    #{show $ memberMemberSince m}
+    ^{prettyDate $ memberMemberSince m}
     <br>
   $else
     <div .alert .alert-info>
       Jäsenhakemuksesi odottaa hyväksymistä. Hakemuksesi käsitellään seuraavassa
-      hallituksen kokouksessa. Teit hakemuksen #{show $ memberMemberSince m}.
+      hallituksen kokouksessa. Teit hakemuksen ^{prettyDate $ memberMemberSince m}.
   $if memberHyyMember m
     <b>Olet
     HYY:n jäsen.

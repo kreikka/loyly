@@ -2,7 +2,7 @@
 <a href=@{ImageR albumAuthor albumIdent nth}>
   <img.img-full src=@{ImageR albumAuthor albumIdent nth}>
 <p>
-  Kuvan lisäsi <b>#{imageAuthor}</b> (#{show imageDate}). #
+  Kuvan lisäsi <b>#{imageAuthor}</b> (^{prettyDate imageDate}). #
   $if imagePublic
     Kuva on <b>julkinen</b>. #
   $else
