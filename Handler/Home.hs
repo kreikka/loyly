@@ -584,7 +584,7 @@ postCalendarR = do
             redirect CalendarR
         _ -> return ()
 
-    allCurrent <- remindRun ["-c+4", "-m", "-w110,0,0"] =<< combineReminds
+    allCurrent <- remindRun ["-c+4", "-b1", "-m", "-w110,0,0"] =<< combineReminds
     cals       <- runDB $ selectList [] []
     let calWidget = maybe mempty
             (\f -> renderForm MsgNewCalendarTitle f CalendarR (submitI MsgNewCalendarDo))
