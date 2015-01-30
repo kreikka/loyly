@@ -3,6 +3,17 @@
 ^{remindRender allCurrent}
 <p>
   Kalenterit:
-  $forall Entity _ cal <- cals
-    #{calendarTitle cal}
-^{calWidget}
+  $forall Entity k cal <- cals
+    \ #
+    <a href=@{CalendarEditR k}>#{calendarTitle cal}
+
+$maybe form <- mform
+  ^{calendarFormWidget Nothing form}
+  <p>
+    <small>
+      Merkinnät annetaan remind-muodossa. #
+      <a href=@{HelpR}>Apua löydät täältä#
+      .
+$nothing
+  <p>
+    <small>Kalenterimerkintöjen lisäys on käytettävissä vain jäsenille.

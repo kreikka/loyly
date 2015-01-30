@@ -27,3 +27,4 @@
 /thumb-by-id/#ImageId     ThumbByIdR     GET
 
 /calendar           CalendarR       GET POST
+/calendar/edit/#CalendarId CalendarEditR GET POST

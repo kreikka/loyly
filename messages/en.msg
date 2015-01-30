@@ -1,4 +1,3 @@
-Hello: Hello
 JoinMember: Liity jäseneksi
 
 AddBlogPost: Lisää postaus
@@ -11,3 +10,5 @@ ImagePublishAck: Päivitä julkaisuoikeudet
 
 NewCalendarTitle: Uusi kalenteri
 NewCalendarDo: Luo kalenteri
+EditCalendarTitle: Muokkaa kalenteria
+EditCalendarDo: Tallenna

@@ -23,6 +23,7 @@ import           System.IO (hClose)
 
 type RemindRes = Either Text Text
 
+-- | Run a remind command
 remindRun :: MonadIO m => [String] -> Text -> m RemindRes
 remindRun ps ctx = liftIO $ do
     (Just inp, Just out, Just err, pid) <- P.createProcess
@@ -46,7 +47,7 @@ prettyRemindS txt = case T.words txt of
 
 -- remindListS :: (exceptions-0.6.1:Control.Monad.Catch.MonadThrow m, MonadBaseControl IO m, MonadIO m) => Text -> WidgetT site m ()
 remindListS txt = do
-    res <- fmap T.lines <$> remindRun ["-s+2"] txt
+    res <- fmap T.lines <$> remindRun ["-r", "-s+2"] txt
     [whamlet|
 $case res
   $of Right xs

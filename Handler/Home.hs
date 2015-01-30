@@ -251,40 +251,46 @@ postAlbumR author ident = do
     album@(Entity aid Album{..}) <- runDB $ getBy404 $ UniqueAlbum author ident
     unless albumPublic (void requireAuthId)
     filters <- imageAccessFilters
-
     images <- runDB $ selectList ((ImageAlbum ==. aid) : filters) [Asc ImageNth]
 
     defaultLayout $ do
         setTitle $ toHtml albumTitle
         $(widgetFile "gallery-album")
 
+-- | We deny view access if (not logged in) and (image not public)
 getImageViewR, postImageViewR :: Text -> Text -> Int -> Handler Html
 postImageViewR = getImageViewR
 getImageViewR author ident nth = do
     Just route <- getCurrentRoute
-    maid <- maybeAuthId
+    maid       <- maybeAuthId
 
-    img@(Entity _ Album{..}, Entity iid Image{..}, people) <- getImage author ident nth
+    img@( Entity _ Album{..}
+        , Entity iid Image{..}
+        , people ) <- getImage author ident nth
 
-    if isNothing maid && not imagePublic then notFound else do
+    -- access control
+    when (isNothing maid && not imagePublic) notFound
 
-        allPeople <- fmap (map $ (,) <$> userUsername . entityVal <*> entityKey) $ runDB $ selectList [] [Asc UserUsername]
+    -- find tagged people
+    allPeople <- fmap (map $ (,) <$> userUsername . entityVal <*> entityKey) $ runDB $ selectList [] [Asc UserUsername]
 
-        form@((res,_),_) <- runFormPost $ renderBootstrap2 $ imageEditForm allPeople img
+    form@((res,_),_) <- runFormPost $ renderBootstrap2 $ imageEditForm allPeople img
 
-        case res of
-            FormSuccess (newPeople, newDesc) -> do
-                runDB $ do
-                    update iid [ImageDesc =. fromMaybe "" newDesc]
-                    deleteWhere [PersonInImageImg ==. iid, PersonInImageUser /<-. newPeople]
-                    mapM_ (\u -> insertUnique $ PersonInImage iid u Nothing) newPeople
-                    publishIfAcked iid
-                redirect route
-            _ -> return ()
+    case res of
+        FormSuccess (newPeople, newDesc) -> do
+            runDB $ do
+                -- this update process is a bit complicated because we need
+                -- to delete untagged people and add newly tagged people
+                update iid [ImageDesc =. fromMaybe "" newDesc]
+                deleteWhere [PersonInImageImg ==. iid, PersonInImageUser /<-. newPeople]
+                mapM_ (\u -> insertUnique $ PersonInImage iid u Nothing) newPeople
+                publishIfAcked iid
+            redirect route
+        _ -> return ()
 
-        defaultLayout $ do
-            setTitle "An image"
-            $(widgetFile "gallery-image")
+    defaultLayout $ do
+        setTitle "An image"
+        $(widgetFile "gallery-image")
 
 getImageR, getThumbR :: Text -> Text -> Int -> Handler ()
 getImageR x y z = sendImage False =<< getImage x y z
@@ -440,9 +446,10 @@ flexImagesWidget' images = do
 
 type ImageInfo = (Entity Album, Entity Image, [(PersonInImage, Entity User)])
 
--- XXX: Could use a join here too
+-- | Get an image's info by its unique path: "album_author/album_name/image_number"
 getImage :: Text -> Text -> Int -> Handler ImageInfo
 getImage author ident nth = runDB $ do
+    -- XXX: Could use a join here too
     album  <- getBy404 $ UniqueAlbum author ident
     image  <- getBy404 $ UniqueImage (entityKey album) nth
     people <- getImagePeople $ entityKey image
@@ -576,27 +583,52 @@ maybeUserId = maybeAuthId >>= maybe (return Nothing) (fmap (fmap entityKey) . ru
 getCalendarR, postCalendarR :: Handler Html
 getCalendarR  = postCalendarR
 postCalendarR = do
-    mform <- maybe (return Nothing) (fmap Just . runFormPost . calendarForm) =<< maybeUserId
-    case mform of
-        Just ((FormSuccess c,_),_) -> do
-            _k <- runDB (insert c)
-            setMessage "Kalenteri luotu"
-            redirect CalendarR
-        _ -> return ()
+    muid <- maybeUserId
+    mform <- case muid of
+        Just uid -> runFormPost (calendarForm $ Left uid)
+                        >>= fmap Just . handleNewCalendar
+        Nothing  -> return Nothing
 
-    allCurrent <- remindRun ["-c+4", "-b1", "-m", "-w110,0,0"] =<< combineReminds
+    allCurrent <- remindRun ["-c+4"       -- generate four week calendar
+                            , "-b1"       -- 24h time format
+                            , "-m"        -- week begins at monday
+                            , "-r"        -- disable RUN and shell()
+                            , "-w110,0,0" -- 110 character cells 
+                            ] =<< combineReminds
     cals       <- runDB $ selectList [] []
-    let calWidget = maybe mempty
-            (\f -> renderForm MsgNewCalendarTitle f CalendarR (submitI MsgNewCalendarDo))
-            mform
+
     defaultLayout $ do
         setTitle "Tapahtumakalenteri"
         $(widgetFile "calendar-home")
 
-calendarForm :: UserId -> Form Calendar
-calendarForm u = renderBootstrap2 $ Calendar u
-    <$> areq textField "Otsikko" Nothing
-    <*> fmap unTextarea (areq textareaField "Merkinnät" Nothing)
+handleNewCalendar ((FormSuccess c,_),_) = runDB (insert c) >> setMessage "Kalenteri luotu" >> redirect CalendarR
+handleNewCalendar x                     = return x
+
+getCalendarEditR, postCalendarEditR :: CalendarId -> Handler Html
+getCalendarEditR        = postCalendarEditR
+postCalendarEditR calId = do
+    muid <- maybeUserId
+    cal  <- runDB (get404 calId)
+    form <- runFormPost $ calendarForm (Right cal)
+    case muid of
+        Just uid | uid == calendarOwner cal -> handleEditCalendar calId form
+        _                                   -> return ()
+    defaultLayout $ do
+        setTitle $ toHtml $ calendarTitle cal
+        $(widgetFile "calendar-edit")
+
+handleEditCalendar k ((FormSuccess c,_),_) = runDB (replace k c) >> setMessage "Kalenteri päivitetty"
+handleEditCalendar _ _ = return ()
+
+calendarFormWidget :: Maybe CalendarId -> ((t, Widget), Enctype) -> Widget
+calendarFormWidget Nothing  form = renderForm MsgNewCalendarTitle form CalendarR (submitI MsgNewCalendarDo)
+calendarFormWidget (Just k) form = renderForm MsgEditCalendarTitle form (CalendarEditR k) (submitI MsgEditCalendarDo)
+
+calendarForm :: Either UserId Calendar -> Form Calendar
+calendarForm x = renderBootstrap2 $ Calendar (either id calendarOwner x)
+    <$> areq textField "Otsikko" (either (const Nothing) (Just . calendarTitle) x)
+    <*> fmap unTextarea (areq textareaField "Merkinnät"
+                         (either (const Nothing) (Just . Textarea . calendarRemind) x))
 
 remindRender :: RemindRes -> Widget
 remindRender x = [whamlet|$newline always

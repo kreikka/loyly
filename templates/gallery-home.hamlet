@@ -3,8 +3,8 @@
 <ul>
   $forall Entity _ Album{..} <- albums
     <li>
-      <a href=@{AlbumR albumAuthor albumIdent}>#{albumTitle}
-      \ (^{prettyDate albumDate})
+      <a href=@{AlbumR albumAuthor albumIdent}>#{albumTitle} #
+      <small>(Päivitetty ^{prettyDate albumDate})
 <p>
   Galleriassa on #{numImages} kuvaa,
   joista #{numPrivate} yksityisiä#
@@ -14,3 +14,7 @@
     , joista #{numPrivatePending} odottaa julkaisuoikeuspäätöstä.
 <br>
 ^{uploadWidget Nothing}
+
+<p>
+  <small>
+    <a href=@{HelpR}>Hukassa julkisuusasetusten kanssa?

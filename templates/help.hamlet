@@ -25,3 +25,40 @@
   Postauksia lisätäksesi sinun täytyy olla joko virallisesti jäsen ja
   kirjautunut sisään, tai tietää salasana (ja <b>ei</b> olla kirjautunut
   sisään).
+
+<h2>Galleria
+
+<p>Gallerian käyttämisessä on muutama tärkeä pointti:
+
+<ol>
+  <li>
+    <b>Jokainen kuva kuuluu aina vähintään yhteen albumiin.
+  <li>
+    <b>Merkitse aina jokaiseen kuvaan niissä esiintyvät henkilöt. #
+    Tämä on tärkeää, koska jokaiselta kuvassa esiintyvältä tarvitaan hyväksyntä
+    kuvan julkaisemiseksi. Hyväksymisprosessista tarkemmin alla.
+  <li>
+    <b>Kuvia että albumeja voi asettaa julkisiksi/yksityisiksi.
+    Tärkein asetus on kuvan yksityisyysasetus: yksityiset kuvat näkyvät aina
+    vain jäsenille, julkiset kaikille; yksityisen <i>albumin</i> sisältöä ei
+    \<i>listata</i> ei-jäsenille, mutta yksityisen albumin sisällä olevat
+    \<i>julkiset</i> kuvat ovat nähtävissä myös ei-jäsenille. Eli yksityisen
+    albumin julkisia kuvia pystyy jakamaan kenelle tahansa kuvan URL:lla. 
+  
+<h3>Julkaisuhyväksyntä
+
+<p>Jokaiseen kuva, jossa on henkilöitä, on ensinnäkin kuvan lisäajän merkattava
+   heidät kaikki. Jokaisen merkatun henkilön täytyy hyväksyä kuvan julkaiseminen
+   omassa profiilissaan. Tai vaihtoehtoisesti hän voi asettaa julkaisuoikeuden
+   voimaan kaikille uusille kuville hänestä.
+
+<h2>Kalenteri
+
+<p>
+  GNU remindin ominaisuudet ovat käytössä RUN:ia ja shell():iä
+  lukuunottamatta. Esimerkkejä:
+  <pre>
+   Wed, Thu AT 20:00 DURATION 2:00 MSG Sauna @jossain
+   2015-01-30 AT 16:00 MSG Hallituksen kokous @jossain_muualla
+  Ensimmäinen tarkoittaa, että joka keskiviikko ja torstai on sauna. Toinen
+  tarkoittaa, että 30.1.2015 on hallituksen kokous.
