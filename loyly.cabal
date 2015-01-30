@@ -81,6 +81,7 @@ library
                  , colour                        >= 2.3
                  , word8
                  , friendly-time
+                 , old-locale
 
     -- see https://github.com/yesodweb/yesod/issues/814
     if !os(windows)

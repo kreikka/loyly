@@ -29,7 +29,7 @@ import Text.Hamlet (hamletFile)
 import Yesod.Core.Types (Logger)
 import Data.Time.Format.Human
 import Network.Mail.Mime (Address(..), renderSendMail, simpleMail')
-
+import System.Locale
 
 -- | The site argument for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -300,14 +300,26 @@ finnishLocale = defaultHumanTimeLocale
                                5 -> "perjantaina"
                                6 -> "lauantaina"
                                7 -> "sunnuntaina"
-                               _ -> "ei ole päivä: " ++ show n
-                               )
+                               _ -> "EI OLE PÄIVÄ: " ++ show n)
     , daysAgo      = (++ " päivää sitten")
     , weekAgo      = (++ " viikko sitten")
     , weeksAgo     = (++ " viikkoa sitten")
-    , onYear       = ("vuonna " ++)
-    -- , locale       = defaultTimeLocale
+    , onYear       = id
+    , locale       = defaultTimeLocale
+        { wDays = [("Sunnuntai", "Su"), ("Maanantai", "Ma")
+                  ,("Tiistai", "Ti"), ("Keskiviikko", "Ke")
+                  ,("Torstai", "To"), ("Perjantai", "Pe")
+                  ,("Lauantai", "La")]
+        , months = [("Tammikuu", "Tam"), ("Helmikuu", "Hel")
+                   ,("Maaliskuu", "Maa"), ("Huhtikuu", "Huh")
+                   ,("Toukokuu", "Tou"), ("Kesäkuu", "Kes")
+                   ,("Heinäkuu", "Hei"), ("Elokuu", "Elo")
+                   ,("Syyskuu", "Syy"), ("Lokakuu", "Lok")
+                   ,("Marraskuu", "Mar"), ("Joulukuu", "Jou")]
+        }
     , dayOfWeekFmt = "%A klo %l:%M %p"
+    , thisYearFmt  = "%B %e"
+    , prevYearFmt  = "%B %e, %Y"
     }
 
 -- | Get the 'Extra' value, used to hold data from the settings.yml file.
