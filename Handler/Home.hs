@@ -589,12 +589,7 @@ postCalendarR = do
                         >>= fmap Just . handleNewCalendar
         Nothing  -> return Nothing
 
-    allCurrent <- remindRun ["-c+4"       -- generate four week calendar
-                            , "-b1"       -- 24h time format
-                            , "-m"        -- week begins at monday
-                            , "-r"        -- disable RUN and shell()
-                            , "-w110,0,0" -- 110 character cells 
-                            ] =<< combineReminds
+    allCurrent <- remindAsciiCalendar
     cals       <- runDB $ selectList [] []
 
     defaultLayout $ do

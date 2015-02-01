@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase, ConstraintKinds #-}
 ------------------------------------------------------------------------------
 -- | 
 -- Module         : RemindHelpers
@@ -17,11 +17,14 @@ import           Control.Applicative
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import           Database.Persist.Sql
 import qualified System.Process as P
 import           System.Exit (ExitCode(..))
 import           System.IO (hClose)
 
 type RemindRes = Either Text Text
+
+type RemindCtx site = (Yesod site, YesodPersist site, YesodPersistBackend site ~ SqlBackend)
 
 -- | Run a remind command
 remindRun :: MonadIO m => [String] -> Text -> m RemindRes
@@ -40,28 +43,41 @@ remindRun ps ctx = liftIO $ do
         ExitSuccess -> Right out'
         ExitFailure _ -> Left err'
 
--- prettyRemindS :: Text -> WidgetT site m ()
-prettyRemindS txt = case T.words txt of
+-- | Print a reminder line formatted inside an <i> element.
+prettyRemindI :: Text -> WidgetT site IO ()
+prettyRemindI txt = case T.words txt of
     date : _ : _ : _ : _ : time : msg -> [whamlet|<i>#{date} #{time} - #{T.unwords msg}|]
     _ -> [whamlet|error: no parse: #{txt}|]
 
--- remindListS :: (exceptions-0.6.1:Control.Monad.Catch.MonadThrow m, MonadBaseControl IO m, MonadIO m) => Text -> WidgetT site m ()
+-- | <li> entries for next reminders.
+remindListS :: RemindCtx site => Text -> WidgetT site IO ()
 remindListS txt = do
     res <- fmap T.lines <$> remindRun ["-r", "-s+2"] txt
     [whamlet|
 $case res
   $of Right xs
     $forall x <- xs
-      <li.light>^{prettyRemindS x}
+      <li.light>^{prettyRemindI x}
   $of Left err
       <li.alert-error>err
 |]
 
--- combineReminds :: (YesodPersist site, YesodPersistBackend site ~ persistent-2.1.1:Database.Persist.Sql.Types.SqlBackend) => HandlerT site IO Text
-combineReminds =
-    T.unlines . map (calendarRemind . entityVal)
-    <$> runDB (selectList [] [])
+-- | Combine all remind entries from DB to a single text that can be fed to
+-- 'remind'.
+combineReminds :: RemindCtx site => HandlerT site IO Text
+combineReminds = do
+    txts <- runDB (selectList [] [])
+    return $ T.unlines . concat $ map (T.lines . T.replace "\r\n" "\n" . calendarRemind . entityVal) txts
 
--- remindNextWeeks :: (YesodPersist site, YesodPersistBackend site ~ persistent-2.1.1:Database.Persist.Sql.Types.SqlBackend) => WidgetT site IO ()
+remindNextWeeks :: RemindCtx site => WidgetT site IO ()
 remindNextWeeks = remindListS =<< handlerToWidget combineReminds
 
+-- | A simple ascii calendar (remind -c)
+remindAsciiCalendar :: RemindCtx site => HandlerT site IO RemindRes
+remindAsciiCalendar = remindRun
+    ["-c+4"       -- generate four week calendar
+    , "-b1"       -- 24h time format
+    , "-m"        -- week begins at monday
+    , "-r"        -- disable RUN and shell()
+    , "-w110,0,0" -- 110 character cells
+    ] =<< combineReminds
