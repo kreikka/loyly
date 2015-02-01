@@ -7,13 +7,11 @@
     \ #
     <a href=@{CalendarEditR k}>#{calendarTitle cal}
 
-$maybe form <- mform
-  ^{calendarFormWidget Nothing form}
-  <p>
+<p>
+  $maybe _ <- muid
     <small>
-      Merkinnät annetaan remind-muodossa. #
-      <a href=@{HelpR}>Apua löydät täältä#
+      Luo uusi kalenteri #
+      <a href=@{CalendarCreateR}>täällä#
       .
-$nothing
-  <p>
+  $nothing
     <small>Kalenterimerkintöjen lisäys on käytettävissä vain jäsenille.

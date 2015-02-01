@@ -26,5 +26,6 @@
 /image-by-id/#ImageId     ImageByIdR     GET
 /thumb-by-id/#ImageId     ThumbByIdR     GET
 
-/calendar           CalendarR       GET POST
+/calendar           CalendarR            GET
+/calendar/create    CalendarCreateR      GET POST
 /calendar/edit/#CalendarId CalendarEditR GET POST

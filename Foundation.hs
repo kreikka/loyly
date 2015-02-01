@@ -5,7 +5,6 @@ import Prelude
 import Data.Text (Text)
 import Data.Time
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
 import Yesod
 import Yesod.Static
 import Yesod.Auth
@@ -28,7 +27,6 @@ import Text.Jasmine (minifym)
 import Text.Hamlet (hamletFile)
 import Yesod.Core.Types (Logger)
 import Data.Time.Format.Human
-import Network.Mail.Mime (Address(..), renderSendMail, simpleMail')
 import System.Locale
 
 -- | The site argument for your application. This can be a good place to
@@ -257,11 +255,6 @@ instance AccountSendEmail App where
               ]
 #endif
 
-
-isAuthRoute :: Maybe (Route App) -> Bool
-isAuthRoute (Just (AuthR _)) = True
-isAuthRoute _ = False
-
 -- Form, extra
 
 instance RenderMessage App FormMessage where
@@ -284,6 +277,7 @@ prettyDate t = do
     s <- liftIO $ humanReadableTimeI18N finnishLocale t
     [whamlet|#{s}|]
 
+finnishLocale :: HumanTimeLocale
 finnishLocale = defaultHumanTimeLocale
     { justNow       = "juuri äsken"
     , secondsAgo    = (++ " sekuntia sitten")
@@ -328,6 +322,10 @@ getExtra = fmap (appExtra . settings) getYesod
 
 -- Other
 
+isAuthRoute :: Maybe (Route App) -> Bool
+isAuthRoute (Just (AuthR _)) = True
+isAuthRoute _ = False
+
 recentBlogPosts :: Maybe Int -> Widget
 recentBlogPosts mn = do
     mr    <- handlerToWidget getCurrentRoute
@@ -339,3 +337,14 @@ $forall Entity _ post <- posts
     <li :mr == Just route:.active>
       <a href=@{route}>#{blogPostTitle post}
 |]
+
+isSuccess, isError :: Html -> Html
+isSuccess msg = do
+    preEscapedToMarkup ("<div class=\"alert alert-success\" id=message>" :: T.Text)
+    msg
+    preEscapedToMarkup ("</div>" :: Text)
+
+isError msg = do
+    preEscapedToMarkup ("<div class=\"alert alert-error\" id=message>" :: T.Text)
+    msg
+    preEscapedToMarkup ("</div>" :: Text)

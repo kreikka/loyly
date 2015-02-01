@@ -29,12 +29,11 @@ import           Yesod.Markdown
 import           Yesod.Auth.Account (setPasswordR, newPasswordForm, resetPasswordR)
 import qualified Yesod.Auth.Message as Msg
 
-
 homeTitle :: MonadWidget m => m ()
 homeTitle = setTitle "Akateeminen saunakerho Löyly ry"
 
 getHomeR :: Handler Html
-getHomeR =
+getHomeR = do
     defaultLayout $ do
         homeTitle
         $(widgetFile "homepage")
@@ -47,7 +46,7 @@ postMembersR = do
     case result of
         FormSuccess res -> do
             _ <- runDB $ insert res
-            setMessage $ toHtml $ "Tervetuloa saunomaan, " <> memberName res
+            setMessage . isSuccess . toHtml $ "Tervetuloa saunomaan, " <> memberName res <> "!"
             redirect MembersR
         _ -> return ()
 
@@ -186,7 +185,7 @@ handleBlogPost (fi, overwrite, editor) = do
             }
 
     if T.null (blogPostIdent post)
-        then setMessage "title-metakenttä ei voi olla tyhjä"
+        then setMessage $ isError "Virhe: tiedoston title-metakentän on oltava epätyhjä."
         else saveBlogPost overwrite post
 
 saveBlogPost :: Bool -> BlogPost -> Handler ()
@@ -196,7 +195,8 @@ saveBlogPost overwrite p = do
         Nothing                       -> void . runDB $ insert p
         Just (Entity k v) | overwrite -> void . runDB $ replace k p { blogPostLog = blogPostLog p ++ blogPostLog v }
                           | otherwise -> return ()
-    setMessage $ maybe "Postaus lisätty" (\_ -> "Postaus päivitetty.") mp
+    setMessage $ isSuccess $ maybe "Postaus lisätty."
+        (\p -> toHtml $ "Postaus `" <> blogPostTitle (entityVal p) <> "' päivitetty.") mp
     redirect $ BlogPostR (blogPostIdent p)
 
 -- * Profile
@@ -337,7 +337,7 @@ uploadWidget malbum = do
             -- check pass and album uniqueness
             handlerToWidget $ do
                 pass' <- extraBlogPass <$> getExtra
-                when (pass /= pass') $ do setMessage "Väärä salasana"
+                when (pass /= pass') $ do setMessage $ isError "Virhe: Väärä salasana."
                                           redirect GalleryR
 
                 when (isNothing malbum) $ do
@@ -350,7 +350,7 @@ uploadWidget malbum = do
             -- insert files
             nfiles <- lookupFiles "files" >>= handlerToWidget . saveFiles author aid
 
-            setMessage $ toHtml $ show nfiles ++ " kuvaa lisätty."
+            setMessage . isSuccess . toHtml $ show nfiles ++ " kuvaa lisätty."
             redirect $ AlbumR albumAuthor albumIdent
 
         _ -> renderForm msg
@@ -360,7 +360,7 @@ uploadWidget malbum = do
   where
     msg = case malbum of
               Nothing -> MsgCreateNewAlbum
-              Just a  -> MsgUpdateAlbum
+              Just _  -> MsgUpdateAlbum
     filesWidget = [whamlet|
 <div.control-group.clearfix required>
     <label.control-label for=files>Kuvatiedostot
@@ -407,7 +407,7 @@ saveFiles author aid fs = do
 
     code <- liftIO $ generateThumbnails albumRoot thumbDir names
     when (code /= ExitSuccess) $ do
-        setMessage "Virhe: kuvat lisättiin, mutta peukalonkynsien generointi epäonnistui!"
+        setMessage $ isError "Virhe: kuvat lisättiin, mutta peukalonkynsien generointi epäonnistui!"
         redirect HomeR
 
     return $ length fs
@@ -497,12 +497,12 @@ postImagePublishAckR = do
     case res of
         FormSuccess xs -> do runDB $ mapM_ (uncurry updatePublishable) xs
                              runDB $ mapM_ (publishIfAcked . personInImageImg . entityVal) piis
-                             setMessage "Julkaisuoikeudet asetettu"
+                             setMessage $ isSuccess "Julkaisuoikeudet asetettu."
                              redirect ProfileR
         _ -> do
-            setMessage "Päivitys epäonnistui"
+            setMessage $ isError "Virhe: päivitys epäonnistui, tarkista lomake."
             defaultLayout $ do
-                setTitle "Julkaisuoikeuksien päivitys"
+                setTitle "Julkaisuoikeuksien päivitys."
                 ackImageForm form
   where
     updatePublishable k status = update k [PersonInImagePublishable =. status]
@@ -580,25 +580,29 @@ maybeUserId = maybeAuthId >>= maybe (return Nothing) (fmap (fmap entityKey) . ru
 
 -- * Calendar
 
-getCalendarR, postCalendarR :: Handler Html
-getCalendarR  = postCalendarR
-postCalendarR = do
-    muid <- maybeUserId
-    mform <- case muid of
-        Just uid -> runFormPost (calendarForm $ Left uid)
-                        >>= fmap Just . handleNewCalendar
-        Nothing  -> return Nothing
+-- ** Views
 
-    allCurrent <- remindAsciiCalendar
+-- | Combined calendar view
+getCalendarR :: Handler Html
+getCalendarR = do
+    muid       <- maybeUserId
+    allCurrent <- remindAsciiCalendar -- TODO allCurrent should be cached
     cals       <- runDB $ selectList [] []
-
     defaultLayout $ do
         setTitle "Tapahtumakalenteri"
         $(widgetFile "calendar-home")
 
-handleNewCalendar ((FormSuccess c,_),_) = runDB (insert c) >> setMessage "Kalenteri luotu" >> redirect CalendarR
-handleNewCalendar x                     = return x
+getCalendarCreateR, postCalendarCreateR :: Handler Html
+getCalendarCreateR  = postCalendarCreateR
+postCalendarCreateR = do
+    uid        <- requireUserId
+    form       <- runFormPost (calendarForm $ Left uid)
+    handleNewCalendar form
+    defaultLayout $ do
+        setTitle "Uusi kalenteri"
+        $(widgetFile "calendar-create")
 
+-- | Single calendar edit page
 getCalendarEditR, postCalendarEditR :: CalendarId -> Handler Html
 getCalendarEditR        = postCalendarEditR
 postCalendarEditR calId = do
@@ -612,8 +616,19 @@ postCalendarEditR calId = do
         setTitle $ toHtml $ calendarTitle cal
         $(widgetFile "calendar-edit")
 
-handleEditCalendar k ((FormSuccess c,_),_) = runDB (replace k c) >> setMessage "Kalenteri päivitetty"
-handleEditCalendar _ _ = return ()
+-- ** Form handlers
+
+-- | On FormSuccess update the db entry and redirect to CalendarR.
+handleNewCalendar :: ((FormResult Calendar, b), c) -> Handler ()
+handleNewCalendar    ((FormSuccess c,_),_) = runDB (insert c) >> setMessage (isSuccess "Kalenteri luotu.") >> redirect CalendarR
+handleNewCalendar    _                     = return ()
+
+-- | On FormSuccess update the db entry and redirect to CalendarR.
+handleEditCalendar :: CalendarId -> ((FormResult Calendar, b), c) -> Handler ()
+handleEditCalendar k ((FormSuccess c,_),_) = runDB (replace k c) >> setMessage (isSuccess "Kalenteri päivitetty.") >> redirect CalendarR
+handleEditCalendar _ _                     = return ()
+
+-- ** Widgets and forms
 
 calendarFormWidget :: Maybe CalendarId -> ((t, Widget), Enctype) -> Widget
 calendarFormWidget Nothing  form = renderForm MsgNewCalendarTitle form CalendarR (submitI MsgNewCalendarDo)

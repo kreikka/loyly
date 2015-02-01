@@ -38,7 +38,7 @@
 
   <div#main role="main">
     $maybe msg <- mmsg
-      <div .alert .alert-success #message>#{msg}
+      #{msg}
     ^{widget}
 
 <footer #footer>
