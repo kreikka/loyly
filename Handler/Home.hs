@@ -356,7 +356,7 @@ uploadWidget malbum = do
 
         _ -> renderForm msg
                 ((result, widget >> filesWidget), Multipart)
-                (maybe GalleryR (AlbumR <$> albumAuthor . entityVal <*> albumTitle . entityVal) malbum)
+                (maybe GalleryR (AlbumR <$> albumAuthor . entityVal <*> albumIdent . entityVal) malbum)
                 (submitI msg)
   where
     msg = case malbum of
