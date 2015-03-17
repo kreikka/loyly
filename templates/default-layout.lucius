@@ -273,6 +273,7 @@ a:hover {
 .user-block {
   padding:0.5em 1em;
   margin:0.2em 0.3em;
+  line-height: 3em;
   background:#{bg 1};
   color:#{dimc 1};
   border:1px solid #{c 1};
