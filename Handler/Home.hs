@@ -318,8 +318,9 @@ imageEditForm :: RenderMessage App msg
               -> ImageInfo
               -> AForm Handler ([UserId], Maybe Text)
 imageEditForm allPeople (_,Entity _ img, people) = (,)
-    <$> areq (multiSelectFieldList allPeople) "Ihmiset kuvassa" (Just $ entityKey . snd <$> people)
-    <*> (fmap unTextarea <$> aopt textareaField "Meta" (Just . Just . Textarea $ imageDesc img))
+    <$> (fmap (fromMaybe []) $ aopt (multiSelectFieldList allPeople) "Ihmiset kuvassa" (Just . Just $ nowPeople))
+    <*> (fmap (fmap unTextarea) $ aopt textareaField "Meta" (Just . Just . Textarea $ imageDesc img))
+    where nowPeople = entityKey . snd <$> people
 
 uploadWidget :: Maybe (Entity Album) -> Widget
 uploadWidget malbum = do
