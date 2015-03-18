@@ -27,6 +27,10 @@ import Text.Jasmine (minifym)
 import Text.Hamlet (hamletFile)
 import Yesod.Core.Types (Logger)
 import Data.Time.Format.Human
+#if DEVELOPMENT
+#else
+import Network.Mail.Mime (Address(..), renderSendMail, simpleMail')
+#endif
 import System.Locale
 
 -- | The site argument for your application. This can be a good place to
