@@ -603,16 +603,21 @@ postCalendarCreateR = do
         setTitle "Uusi kalenteri"
         $(widgetFile "calendar-create")
 
--- | Single calendar edit page
+-- | Single calendar view and edit page.
+-- Editing is enabled iff viewing as calendar owner.
 getCalendarEditR, postCalendarEditR :: CalendarId -> Handler Html
 getCalendarEditR        = postCalendarEditR
 postCalendarEditR calId = do
     muid <- maybeUserId
     cal  <- runDB (get404 calId)
-    form <- runFormPost $ calendarForm (Right cal)
-    case muid of
-        Just uid | uid == calendarOwner cal -> handleEditCalendar calId form
-        _                                   -> return ()
+
+    mform <- case muid of
+        Just uid | uid == calendarOwner cal -> do
+            form <- runFormPost $ calendarForm (Right cal)
+            handleEditCalendar calId form
+            return (Just form)
+        _ -> return Nothing
+
     defaultLayout $ do
         setTitle $ toHtml $ calendarTitle cal
         $(widgetFile "calendar-edit")

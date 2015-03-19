@@ -1,6 +1,11 @@
 <h1>#{calendarTitle cal}
 
-^{calendarFormWidget (Just calId) form}
+<code>
+  <pre>
+    #{calendarRemind cal}
+
+
+^{maybe mempty (calendarFormWidget (Just calId)) mform}
 
 <p>
   <small>
