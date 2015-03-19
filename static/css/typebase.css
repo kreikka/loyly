@@ -19,8 +19,11 @@ html {
 /* Copy & Lists */
 p {
   line-height: 1.5rem;
-  margin-top: 1.5rem;
+  margin-top:0.5em;
   margin-bottom: 0;
+}
+p + p {
+  margin-top: 1.5rem;
 }
 ul,
 ol {
@@ -68,8 +71,8 @@ h1, .alpha {
 }
 h2, .beta {
   font-size: 2.828rem;
-  line-height: 3rem;
-  margin-top: 3rem;
+  line-height: 2.9rem;
+  margin-top: 1.3rem;
 }
 h3, .gamma {
   font-size: 1.414rem;

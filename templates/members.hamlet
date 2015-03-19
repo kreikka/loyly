@@ -6,27 +6,24 @@
   mutta periaatteessa kuka vain voidaan hyväksyä jäseneksi.  Uusien jäsenten
   hyväksymisestä päättää hallitus.
 
+<h2>Jäsenet
 <p>
   ^{memberStatistics}
-
-<p>
-  Yhdistykseen liittyminen tapahtuu alta löytyvällä lomakkeella. Liitythän myös
-  kanavallemme #saunahali @IRCnet !
+  <br>
+  $forall Entity _ u <- users
+    <a.user-block href=@{PublicProfileR $ userUsername u}>#{userUsername u}
 
 $maybe _ <- maid
   <div.alert.alert-success>
     Olet jäsen.
     \<a href=@{ProfileR}>Siirry profiilisi</a>.
-
 $nothing
+  <h2>Liity jäseneksi
   $case result
     $of FormFailure _
       <div .alert .alert-error>Hups... jotain meni pieleen!
     $of _
+  <p>
+    Yhdistykseen liittyminen tapahtuu alta löytyvällä lomakkeella.
+    Liitythän myös kanavallemme #saunahali @IRCnet&nbsp;!
   ^{renderForm MsgJoinMember form MembersR (submitI MsgJoinMember)}
-
-<h2>Jäsenten profiilit
-
-<p>
-  $forall Entity _ u <- users
-    <a.user-block href=@{PublicProfileR $ userUsername u}>#{userUsername u}
