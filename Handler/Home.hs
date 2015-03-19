@@ -303,8 +303,8 @@ getThumbByIdR = getImageById >=> sendImage True
 -- | Handles access control too
 sendImage :: Bool -> ImageInfo -> Handler ()
 {-# INLINE sendImage #-}
-sendImage thumb (Entity aid _, Entity _ Image{..}, _) = do
-    unless imagePublic (void requireAuthId)
+sendImage thumb (Entity aid Album{..}, Entity _ Image{..}, _) = do
+    unless (not albumPublic || imagePublic) (void requireAuthId)
     root <- extraGalleryRoot <$> getExtra
     let path = root </> show (fromSqlKey aid) </>
                 (if thumb then thumbDir </> imageFile <.> ".jpg"
