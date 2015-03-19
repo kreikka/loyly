@@ -197,20 +197,27 @@ instance YesodAuthAccount (AccountPersistDB App User) App where
         tm <- getRouteToParent
         lift $ defaultLayout $ do
             setTitleI Msg.PasswordResetTitle
-            form <- liftHandlerT $ runFormPost $ renderBootstrap2 resetPasswordForm
             [whamlet|<div.toppush>|]
-            renderForm Msg.PasswordResetTitle form (tm resetPasswordR) (submitI Msg.SendPasswordResetEmail)
+            runAndRenderFormPost Msg.PasswordResetTitle resetPasswordForm (tm resetPasswordR) (submitI Msg.SendPasswordResetEmail)
 
     unregisteredLogin u = do
         tm <- getRouteToParent
         lift $ defaultLayout $ do
             setTitleI Msg.MsgEmailUnverified
+
             [whamlet|
 <div .toppush>
 <div .alert .alert-error>Kirjautuminen epäonnistui
 |] -- TODO i18n
-            form <- liftHandlerT $ runFormPost $ renderBootstrap2 $ resendVerifyEmailForm (username u)
-            renderForm Msg.MsgEmailUnverified form (tm resendVerifyR) (submitI Msg.MsgResendVerifyEmail)
+
+            runAndRenderFormPost Msg.MsgEmailUnverified (resendVerifyEmailForm (username u)) (tm resendVerifyR) (submitI Msg.MsgResendVerifyEmail)
+
+    setPasswordHandler u = do
+        tm <- getRouteToParent
+        lift $ defaultLayout $ do
+            setTitleI Msg.SetPassTitle
+            [whamlet|<div.toppush>|]
+            runAndRenderFormPost Msg.SetPass (newPasswordForm (username u) (userResetPwdKey u)) (tm setPasswordR) (submitI Msg.SetPassTitle)
 
 -- XXX: pull request to yesod-auth-account
 finnishAccountMsg :: Msg.AccountMsg -> T.Text
@@ -275,6 +282,11 @@ renderForm legend ((_, widget), enctype) action formActions = [whamlet|
     ^{widget}
   <div .form-actions>^{formActions}
 |]
+
+runAndRenderFormPost :: RenderMessage App msg => msg -> AForm Handler a -> Route App -> Widget -> Widget
+runAndRenderFormPost legend form action formActions = do
+    rendered <- liftHandlerT $ runFormPost $ renderBootstrap2 form
+    renderForm legend rendered action formActions
 
 prettyDate :: UTCTime -> Widget
 prettyDate t = do
