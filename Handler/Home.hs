@@ -28,6 +28,9 @@ import           Database.Persist.Sql (fromSqlKey)
 import           Yesod.Markdown
 import           Yesod.Auth.Account (setPasswordR, newPasswordForm, resetPasswordR)
 import qualified Yesod.Auth.Message as Msg
+import           Yesod.Auth (getAuthEntity)
+
+import Permissions
 
 homeTitle :: MonadWidget m => m ()
 homeTitle = setTitle "Akateeminen saunakerho Löyly ry"
@@ -233,13 +236,15 @@ getGalleryR  = postGalleryR
 postGalleryR = do
     albumFilters <- albumAccessFilters
     imageFilters <- imageAccessFilters
-    albums <- runDB $ selectList albumFilters [Desc AlbumDate]
-    images <- runDB $ selectList imageFilters [Desc ImageDate, LimitTo 8]
-    numImages <- runDB $ count ([] :: [Filter Image])
-    numPrivate <- runDB $ count [ImagePublic ==. False]
-    numPrivatePending <- runDB $ do
-        pii <- selectList [PersonInImagePublishable ==. Nothing] [Asc PersonInImageImg]
-        return $ length $ L.nub $ map (personInImageImg . entityVal) pii
+    albums       <- runDB $ selectList albumFilters [Desc AlbumDate]
+    images       <- runDB $ selectList imageFilters [Desc ImageDate, LimitTo 8] -- a few most resent images
+    numImages    <- runDB $ count ([] :: [Filter Image])
+    numPrivate   <- runDB $ count [ImageAccess ==. readableMembers]
+
+    numNotAcked  <- runDB $ do
+        notAcked <- selectList [PersonInImageAcked ==. Nothing] [Asc PersonInImageImg]
+        return $ length $ L.nub $ map (personInImageImg . entityVal) notAcked
+
     defaultLayout $ do
         setTitle "Galleria"
         $(widgetFile "gallery-home")
@@ -249,7 +254,10 @@ getAlbumR, postAlbumR :: Text -> Text -> Handler Html
 getAlbumR               = postAlbumR
 postAlbumR author ident = do
     album@(Entity aid Album{..}) <- runDB $ getBy404 $ UniqueAlbum author ident
-    unless albumPublic (void requireAuthId)
+
+    authorized <- permissionsOrAuthored albumAccess albumAuthor
+    unless authorized $ permissionDenied "Not authorized"
+
     filters <- imageAccessFilters
     images <- runDB $ selectList ((ImageAlbum ==. aid) : filters) [Asc ImageNth]
 
@@ -259,38 +267,38 @@ postAlbumR author ident = do
 
 -- | We deny view access if (not logged in) and (image not public)
 getImageViewR, postImageViewR :: Text -> Text -> Int -> Handler Html
-postImageViewR = getImageViewR
+postImageViewR                 = getImageViewR
 getImageViewR author ident nth = do
     Just route <- getCurrentRoute
     maid       <- maybeAuthId
 
-    img@( Entity _ Album{..}
-        , Entity iid Image{..}
-        , people ) <- getImage author ident nth
+    img@(Entity _ Album{..}, Entity iid Image{..}, people) <- getImage author ident nth
 
-    -- access control
-    when (isNothing maid && not imagePublic) notFound
+    authorized <- permissionsOrAuthoredOrAckPending img
+    unless authorized $ permissionDenied "Not authorized"
 
-    -- find tagged people
-    allPeople <- fmap (map $ (,) <$> userUsername . entityVal <*> entityKey) $ runDB $ selectList [] [Asc UserUsername]
+    -- List of everyone, used in the ack select list
+    allPeople <- map (liftA2 (,) (userUsername . entityVal) entityKey) <$> runDB (selectList [] [Asc UserUsername])
 
+    -- handle image edit form
     form@((res,_),_) <- runFormPost $ renderBootstrap2 $ imageEditForm allPeople img
-
     case res of
         FormSuccess (newPeople, newDesc) -> do
             runDB $ do
-                -- this update process is a bit complicated because we need
-                -- to delete untagged people and add newly tagged people
                 update iid [ImageDesc =. fromMaybe "" newDesc]
+                -- delete untagged people
                 deleteWhere [PersonInImageImg ==. iid, PersonInImageUser /<-. newPeople]
+                -- add newly tagged people
                 mapM_ (\u -> insertUnique $ PersonInImage iid u Nothing) newPeople
-                publishIfAcked iid
+                updateAckInfo iid
             redirect route
         _ -> return ()
 
     defaultLayout $ do
         setTitle "An image"
         $(widgetFile "gallery-image")
+
+-- *** Sending images
 
 getImageR, getThumbR :: Text -> Text -> Int -> Handler ()
 getImageR x y z = sendImage False =<< getImage x y z
@@ -303,13 +311,19 @@ getThumbByIdR = getImageById >=> sendImage True
 -- | Handles access control too
 sendImage :: Bool -> ImageInfo -> Handler ()
 {-# INLINE sendImage #-}
-sendImage thumb (Entity aid Album{..}, Entity _ Image{..}, _) = do
-    unless (not albumPublic || imagePublic) (void requireAuthId)
+sendImage thumb img@(Entity aid Album{..}, Entity _ Image{..}, _) = do
+
+    authored <- permissionsOrAuthoredOrAckPending img
+    unless authored $ permissionDenied "Not authorized"
+
     root <- extraGalleryRoot <$> getExtra
-    let path = root </> show (fromSqlKey aid) </>
-                (if thumb then thumbDir </> imageFile <.> ".jpg"
-                          else imageFile <.> imageFileExt)
-    sendFile (if thumb then typeJpeg else imageContentType) path
+
+    let fileName | thumb     = thumbDir </> imageFile <.> ".jpg"
+                 | otherwise = imageFile <.> imageFileExt
+        imagePath            = root </> show (fromSqlKey aid) </> fileName
+        imageType            = if thumb then typeJpeg else imageContentType
+
+    sendFile imageType imagePath
 
 -- ** Forms etc.
 
@@ -325,10 +339,11 @@ imageEditForm allPeople (_,Entity _ img, people) = (,)
 uploadWidget :: Maybe (Entity Album) -> Widget
 uploadWidget malbum = do
     maid <- handlerToWidget maybeAuthId
+
     ((result, widget), _) <- handlerToWidget $ runFormPost $ renderBootstrap2 $ (,,,)
         <$> areq textField "Albumin otsikko" (albumTitle . entityVal <$> malbum)
         <*> maybe (areq textField "Kuka olet" Nothing) pure maid
-        <*> areq checkBoxField "Albumi on julkinen" (albumPublic . entityVal <$> malbum)
+        <*> areq permissionsField "Albumi on julkinen" (albumAccess . entityVal <$> malbum)
         <*> maybe (areq passwordField "Salasana" Nothing)
                   (const $ lift $ extraBlogPass <$> getExtra) maid
 
@@ -340,15 +355,12 @@ uploadWidget malbum = do
                 pass' <- extraBlogPass <$> getExtra
                 when (pass /= pass') $ do setMessage $ isError "Virhe: Väärä salasana."
                                           redirect GalleryR
-
                 when (isNothing malbum) $ do
                     indb <- runDB $ getBy $ UniqueAlbum author title
                     when (isJust indb) $ invalidArgs ["Sinulla on jo tämänniminen albumi."]
 
-            -- insert or update album
+            -- insert or update album and files
             Entity aid Album{..} <- handlerToWidget $ createOrUpdateAlbum author malbum title public
-
-            -- insert files
             nfiles <- lookupFiles "files" >>= handlerToWidget . saveFiles author aid
 
             setMessage . isSuccess . toHtml $ show nfiles ++ " kuvaa lisätty."
@@ -370,15 +382,14 @@ uploadWidget malbum = do
 |]
 
 -- NOTE don't use @albumTitle@ returned here, it is not updated
-createOrUpdateAlbum :: Text -> Maybe (Entity Album) -> Text -> Bool -> Handler (Entity Album)
-createOrUpdateAlbum _author (Just (Entity aid album)) title public = do
-    runDB (update aid [ AlbumTitle =. title
-                      , AlbumPublic =. public ])
+createOrUpdateAlbum :: Text -> Maybe (Entity Album) -> Text -> Permissions -> Handler (Entity Album)
+createOrUpdateAlbum _author (Just (Entity aid album)) title access = do
+    runDB $ update aid [AlbumTitle =. title, AlbumAccess =. access]
     return $ Entity aid album
 
-createOrUpdateAlbum author Nothing                    title public = do
+createOrUpdateAlbum author Nothing title access = do
     time      <- liftIO getCurrentTime
-    let album = Album public time (toUrlIdent title) title author
+    let album = Album access time (toUrlIdent title) title author
     aid       <- runDB $ insert album
     return $ Entity aid album
 
@@ -403,7 +414,7 @@ saveFiles author aid fs = do
             contentType = simpleContentType $ encodeUtf8 $ fileContentType fi
 
         liftIO $ fileMove fi (albumRoot </> file <.> ext)
-        _ <- runDB $ insert $ Image False "" time aid nth (T.pack base) author contentType file ext
+        _ <- runDB $ insert $ Image readableNone "" time aid nth (T.pack base) author contentType file ext
         return (file <.> ext)
 
     code <- liftIO $ generateThumbnails albumRoot thumbDir names
@@ -470,34 +481,57 @@ getImagePeople iid = do
     zip people <$> selectList [UserId <-. map personInImageUser people] [Asc UserUsername]
 
 -- ** Access control
-    
+
+permissionsField = radioFieldList getOpts 
+    where getOpts = [("Näkyy kaikille" :: Text, readableAll)
+                    ,("Näkyy vain jäsenille", readableMembers)]
+
 -- | Also unpublishes if personInImages was updated.
-publishIfAcked :: ImageId -> Query ()
-publishIfAcked iid = do
+updateAckInfo :: ImageId -> Query ()
+updateAckInfo iid = do
     piis <- selectList [PersonInImageImg ==. iid] []
-    update iid $
-        if all ((== Just True) . personInImagePublishable . entityVal) piis
-            then [ImagePublic =. True]
-            else [ImagePublic =. False]
+
+    let acks      = map (personInImageAcked . entityVal) piis
+        allPublic = all (== Just 2) acks
+        noPublish = any (== Just 0) acks
+        state | noPublish = readableNone
+              | allPublic = readableAll
+              | otherwise = readableMembers
+    update iid [ImageAccess =. state]
+
+    -- update album
+
+    img <- get404 iid
+    albumImages <- selectList [ImageAlbum ==. imageAlbum img] []
+
+    let perms      = map (imageAccess . entityVal) albumImages
+        hasPublic  = any isReadableAll perms
+        hasPrivate = any isReadableMembers perms
+        albumState | hasPublic  = readableAll
+                   | hasPrivate = readableMembers
+                   | otherwise  = readableNone
+    update (imageAlbum img) [AlbumAccess =. albumState]
+
+type AckForm = (((FormResult [(PersonInImageId, Maybe Int)], Widget), Enctype), [Entity PersonInImage])
 
 -- | The result type looks like a monster, but actually it's just
 -- @(form_result, personInImages)@.
-runImagePublishAckForm :: UserId -> Handler (((FormResult [(PersonInImageId, Maybe Bool)], Widget), Enctype), [Entity PersonInImage])
+runImagePublishAckForm :: UserId -> Handler AckForm
 runImagePublishAckForm uid = do
-    acks <- runDB $ selectList [ PersonInImageUser ==. uid, PersonInImagePublishable ==. Nothing]
+    acks <- runDB $ selectList [ PersonInImageUser ==. uid, PersonInImageAcked ==. Nothing]
                                [ Asc PersonInImageImg ]
     form <- runFormPost $ renderBootstrap2 $ sequenceA $ map ackForm acks
     return (form, acks)
   where
     ackForm (Entity k v) = (k, ) <$> aopt (ackField v) "" Nothing
-    updatePublishable k status = update k [PersonInImagePublishable =. status]
+    updatePublishable k status = update k [PersonInImageAcked =. status]
 
 postImagePublishAckR :: Handler Html
 postImagePublishAckR = do
     form@(((res,_),_),piis) <- runImagePublishAckForm . entityKey =<< runDB . getBy404 . UniqueUsername =<< requireAuthId
     case res of
         FormSuccess xs -> do runDB $ mapM_ (uncurry updatePublishable) xs
-                             runDB $ mapM_ (publishIfAcked . personInImageImg . entityVal) piis
+                             runDB $ mapM_ (updateAckInfo . personInImageImg . entityVal) piis
                              setMessage $ isSuccess "Julkaisuoikeudet asetettu."
                              redirect ProfileR
         _ -> do
@@ -506,34 +540,52 @@ postImagePublishAckR = do
                 setTitle "Julkaisuoikeuksien päivitys."
                 ackImageForm form
   where
-    updatePublishable k status = update k [PersonInImagePublishable =. status]
+    updatePublishable k status | isJust status = update k [PersonInImageAcked =. status]
+                               | otherwise     = return ()
 
-ackImageForm :: (((FormResult [(PersonInImageId, Maybe Bool)], Widget), Enctype), [Entity PersonInImage]) -> Widget
+ackImageForm :: AckForm -> Widget
 ackImageForm (((_, ackWidget), enctype), _) = $(widgetFile "ack-image-form")
 
-ackField :: PersonInImage -> Field Handler Bool
-ackField v = boolField' { fieldView = \theId name attrs val isReq -> [whamlet|
+ackField :: PersonInImage -> Field Handler Int
+ackField v = ackOptions { fieldView = \theId name attrs val isReq -> [whamlet|
 <div.clearfix.ack>
   <img style="float:left" src=@{ThumbByIdR $ personInImageImg v}>
-  <div .controls .clearfix>^{fieldView boolField' theId name attrs val isReq}
+  <div .controls .clearfix>^{fieldView ackOptions theId name attrs val isReq}
 |] }
     where
-        boolField' :: Field Handler Bool
-        boolField' = boolField
+        ackOptions :: Field Handler Int
+        ackOptions = selectFieldList [("Ei julkaisuoikeutta" :: Text, 0)
+                                     ,("Vain jäsenille", 1)
+                                     ,("Kaikille", 2)]
 
 imageAccessFilters :: Handler [Filter Image]
 imageAccessFilters = do
     maid <- maybeAuthId
     return $ case maid of
-          Nothing -> [ImagePublic ==. True]
-          Just _  -> []
+          Just aid -> [ImageAccess >. readableNone] ||. [ImageAuthor ==. aid]
+          Nothing  -> [ImageAccess >. readableNone]
 
 albumAccessFilters :: Handler [Filter Album]
 albumAccessFilters = do
     maid <- maybeAuthId
     return $ case maid of
-          Nothing -> [AlbumPublic ==. True]
-          Just _  -> []
+          Just aid -> [AlbumAccess >. readableNone] ||. [AlbumAuthor ==. aid]
+          Nothing  -> [AlbumAccess >. readableNone]
+
+permissionsOrAuthored :: Permissions -> Text -> Handler Bool
+permissionsOrAuthored p t | isReadableAll p   = return True
+                          | p /= readableNone = isJust <$> maybeAuthId
+                          | otherwise         = (t ==) <$> requireAuthId
+
+-- | image public enough, author of it or on the ack list
+permissionsOrAuthoredOrAckPending :: ImageInfo -> Handler Bool
+permissionsOrAuthoredOrAckPending (_, i, _) = do
+    authored <- permissionsOrAuthored (imageAccess $ entityVal i) (imageAuthor $ entityVal i)
+    if authored then return True else do
+        aid <- requireAuthId
+        uid <- entityKey . fromJust <$> getAuthEntity aid
+        ack <- runDB $ getBy $ UniquePersonImage (entityKey i) uid
+        return (isJust ack)
 
 -- * Misc.
 

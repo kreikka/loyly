@@ -8,10 +8,10 @@
 <p>
   Galleriassa on #{numImages} kuvaa,
   joista #{numPrivate} yksityisiä#
-  $if numPrivatePending == 0
+  $if numNotAcked == 0
     .
   $else
-    , joista #{numPrivatePending} odottaa julkaisuoikeuspäätöstä.
+    ja #{numNotAcked} odottaa julkaisuoikeuspäätöstä.
 <br>
 ^{uploadWidget Nothing}
 

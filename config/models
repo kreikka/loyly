@@ -33,7 +33,7 @@ BlogPost
     UniqueBlogPost ident
 
 Album
-    public Bool default=1
+    access Permissions default=0 -- updated automatically based on contained images
     date UTCTime
     ident Text
     title Text
@@ -41,7 +41,7 @@ Album
     UniqueAlbum author ident
 
 Image
-    public Bool default=1
+    access Permissions default=0
     desc Text default=''
     date UTCTime
     album AlbumId
@@ -56,7 +56,10 @@ Image
 PersonInImage
     img ImageId
     user UserId
-    publishable Bool Maybe -- Nothing if not acked by user, or Just "can publish"
+    acked Int Maybe default=null -- Nothing = ack required
+                                 -- Just 0  = no view permissions
+                                 -- Just 1  = members only
+                                 -- Just 2  = everyone
     UniquePersonImage img user
 
 Calendar

@@ -24,6 +24,7 @@ library
                      Settings.StaticFiles
                      Settings.Development
                      Handler.Home
+                     Permissions
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT

@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Model where
 
 import Yesod
@@ -9,6 +10,8 @@ import Database.Persist.Quasi
 import Data.Typeable (Typeable)
 import Data.Time.Calendar (Day)
 import Prelude
+
+import Permissions
 
 type EditLog = [(UTCTime, Text)]
 

@@ -3,22 +3,27 @@
   <img.img-full src=@{ImageR albumAuthor albumIdent nth}>
 <p>
   Kuvan lisäsi <b>#{imageAuthor}</b>, ^{prettyDate imageDate}. #
-  $if imagePublic
+  $if isReadableAll imageAccess
     Kuva on <b>julkinen</b>. #
-  $else
+  $elseif isReadableMembers imageAccess
     Kuva on <b>yksityinen</b>. #
+  $else
+    Kuva näkyy vain sen lisääjälle sekä kuvaan tägätyille henkilöille.
 
   $if not $ null people
     Ihmiset kuvassa:
     $forall (pii, Entity _ u) <- people
       \ #
       <a href=@{PublicProfileR (userUsername u)}>#{userUsername u}
-      $case personInImagePublishable pii
+      $case personInImageAcked pii
         $of Nothing
           (<i>odottaa julkaisuoikeutta</i>)
-        $of Just False
+        $of Just 0
           (<i>kieltää</i> julkaisun)
+        $of Just 1
+          (vain jäsenille)
         $of _
+          (julkinen)
     .
 <blockquote>#{imageDesc}
 

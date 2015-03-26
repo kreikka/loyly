@@ -166,6 +166,10 @@ instance YesodAuth App where
   <a href=@{tm resetPasswordR}>_{Msg.MsgForgotPassword}
 |] }]
 
+instance YesodAuthPersist App where
+    type AuthEntity App = Entity User
+    getAuthEntity = runDB . getBy . UniqueUsername
+
 instance PersistUserCredentials User where
     userUsernameF = UserUsername
     userPasswordHashF = UserPassword
