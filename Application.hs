@@ -77,6 +77,12 @@ makeFoundation conf = do
         (Database.Persist.runPool dbconf (runMigration migrateAll) p)
         (messageLoggerSource foundation logger)
 
+    let preStartup = 
+            -- update ack status on every image/album
+            runDB $ selectList [] [] >>= mapM_ (updateAckInfo . entityKey)
+
+    runFakeHandler mempty appLogger foundation preStartup >>= either (error . show) return
+
     return foundation
 
 -- for yesod devel

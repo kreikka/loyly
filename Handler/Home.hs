@@ -249,7 +249,7 @@ postGalleryR = do
         setTitle "Galleria"
         $(widgetFile "gallery-home")
 
--- | View all imgs in a specific album.
+-- | Previews of all images in the album.
 getAlbumR, postAlbumR :: Text -> Text -> Handler Html
 getAlbumR               = postAlbumR
 postAlbumR author ident = do
@@ -265,14 +265,15 @@ postAlbumR author ident = do
         setTitle $ toHtml albumTitle
         $(widgetFile "gallery-album")
 
--- | We deny view access if (not logged in) and (image not public)
+-- | HTML view of an album image.
 getImageViewR, postImageViewR :: Text -> Text -> Int -> Handler Html
 postImageViewR                 = getImageViewR
 getImageViewR author ident nth = do
     Just route <- getCurrentRoute
     maid       <- maybeAuthId
 
-    img@(Entity _ Album{..}, Entity iid Image{..}, people) <- getImage author ident nth
+    img@(Entity aid Album{..}, Entity iid Image{..}, people) <- getImage author ident nth
+    imageCount <- runDB $ count [ImageAlbum ==. aid]
 
     authorized <- permissionsOrAuthoredOrAckPending img
     unless authorized $ permissionDenied "Not authorized"
@@ -295,20 +296,22 @@ getImageViewR author ident nth = do
         _ -> return ()
 
     defaultLayout $ do
-        setTitle "An image"
+        setTitle $ "Kuva " <> toHtml imageNth <> " [" <> toHtml albumAuthor <> ", " <> toHtml albumTitle <> "]"
         $(widgetFile "gallery-image")
 
 -- *** Sending images
 
+-- | Send raw image (or thumbnail) based on a @author/album/nth@ URL.
 getImageR, getThumbR :: Text -> Text -> Int -> Handler ()
 getImageR x y z = sendImage False =<< getImage x y z
 getThumbR x y z = sendImage True  =<< getImage x y z
 
+-- | Send raw image (or thumbnail) based on an ImageId.
 getImageByIdR, getThumbByIdR :: ImageId -> Handler ()
 getImageByIdR = getImageById >=> sendImage False
 getThumbByIdR = getImageById >=> sendImage True
 
--- | Handles access control too
+-- | Send an image (or thumbnail) based on "ImageInfo".
 sendImage :: Bool -> ImageInfo -> Handler ()
 {-# INLINE sendImage #-}
 sendImage thumb img@(Entity aid Album{..}, Entity _ Image{..}, _) = do
@@ -327,8 +330,9 @@ sendImage thumb img@(Entity aid Album{..}, Entity _ Image{..}, _) = do
 
 -- ** Forms etc.
 
+-- | This form allows editing tagged people and the description field.
 imageEditForm :: RenderMessage App msg
-              => [(msg, UserId)]
+              => [(msg, UserId)] -- ^ Everyone registered
               -> ImageInfo
               -> AForm Handler ([UserId], Maybe Text)
 imageEditForm allPeople (_,Entity _ img, people) = (,)
@@ -336,6 +340,7 @@ imageEditForm allPeople (_,Entity _ img, people) = (,)
     <*> (fmap (fmap unTextarea) $ aopt textareaField "Meta" (Just . Just . Textarea $ imageDesc img))
     where nowPeople = entityKey . snd <$> people
 
+-- | Upload a new album.
 uploadWidget :: Maybe (Entity Album) -> Widget
 uploadWidget malbum = do
     maid <- handlerToWidget maybeAuthId
@@ -494,9 +499,9 @@ updateAckInfo iid = do
     let acks      = map (personInImageAcked . entityVal) piis
         allPublic = all (== Just 2) acks
         noPublish = any (== Just 0) acks
-        state | noPublish = readableNone
+        state | noPublish = readableMembers
               | allPublic = readableAll
-              | otherwise = readableMembers
+              | otherwise = readableNone
     update iid [ImageAccess =. state]
 
     -- update album
@@ -602,6 +607,11 @@ toUrlIdent = T.map f . T.unwords . T.words . T.filter (not . isPunctuation)
   where
     f c | isSpace c = '-'
         | otherwise = toLower c
+
+prettyPublicity :: Permissions -> Text
+prettyPublicity p | isReadableAll p     = "julkinen"
+                  | isReadableMembers p = "vain jäsenille"
+                  | otherwise           = "piilotettu"
 
 -- ** Pandoc-specific
 

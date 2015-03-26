@@ -1,17 +1,20 @@
 <h1>Galleria
 ^{flexImagesWidget' images}
-<ul>
-  $forall Entity _ Album{..} <- albums
-    <li>
-      <a href=@{AlbumR albumAuthor albumIdent}>#{albumTitle} #
-      <small>(Päivitetty ^{prettyDate albumDate})
+
+<p>
+  Albumit:
+  <ul>
+    $forall Entity _ Album{..} <- albums
+      <li>
+        <a href=@{AlbumR albumAuthor albumIdent}>#{albumTitle} &mdash; #{albumAuthor} #
+        <small>(^{prettyDate albumDate}, <b>#{prettyPublicity albumAccess}</b>)
 <p>
   Galleriassa on #{numImages} kuvaa,
   joista #{numPrivate} yksityisiä#
   $if numNotAcked == 0
     .
   $else
-    ja #{numNotAcked} odottaa julkaisuoikeuspäätöstä.
+    \ ja #{numNotAcked} odottaa julkaisuoikeuspäätöstä.
 <br>
 ^{uploadWidget Nothing}
 

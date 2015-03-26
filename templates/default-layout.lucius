@@ -286,9 +286,10 @@ a:hover {
 .images {
   display:flex;
   flex-flow: row wrap;
-  justify-content: space-around;
+  justify-content: space-between;
 }
 .images img {
-  margin:0.5em 0.2em;
+  margin:0.1em 0.2em;
+  max-width:16em;
 }
 /* }}} */

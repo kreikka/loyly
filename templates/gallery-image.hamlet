@@ -1,31 +1,35 @@
-<h1>#{albumTitle}/#{nth}
-<a href=@{ImageR albumAuthor albumIdent nth}>
-  <img.img-full src=@{ImageR albumAuthor albumIdent nth}>
-<p>
-  Kuvan lisäsi <b>#{imageAuthor}</b>, ^{prettyDate imageDate}. #
-  $if isReadableAll imageAccess
-    Kuva on <b>julkinen</b>. #
-  $elseif isReadableMembers imageAccess
-    Kuva on <b>yksityinen</b>. #
-  $else
-    Kuva näkyy vain sen lisääjälle sekä kuvaan tägätyille henkilöille.
+<h1>
+  <a href=@{AlbumR albumAuthor albumIdent}>#{albumTitle}
 
+<a href=@{ImageByIdR iid}>
+  <img.img-full src=@{ImageByIdR iid}>
+
+(#{nth}/#{imageCount})
+
+<blockquote>#{imageDesc}
+
+<p>
+  Kuvan lisäsi
+  <a href=@{PublicProfileR imageAuthor}><b>#{imageAuthor}</b>
+  ^{prettyDate imageDate}. Kuva on <b>#{prettyPublicity imageAccess}</b>.
+
+<p>
   $if not $ null people
-    Ihmiset kuvassa:
+    \ Ihmiset kuvassa:
     $forall (pii, Entity _ u) <- people
       \ #
       <a href=@{PublicProfileR (userUsername u)}>#{userUsername u}
       $case personInImageAcked pii
         $of Nothing
-          (<i>odottaa julkaisuoikeutta</i>)
+          (<i>odottaa julkaisuoikeutta</i>)#
         $of Just 0
-          (<i>kieltää</i> julkaisun)
+          (<i>kieltää</i> julkaisun)#
         $of Just 1
-          (vain jäsenille)
+          (vain jäsenille)#
         $of _
-          (julkinen)
+          (julkinen)#
     .
-<blockquote>#{imageDesc}
+<small>Piilotettu kuva näkyy vain sen <b>lisääjälle</b> sekä kuvaan <b>tägätyille</b> henkilöille.
 
 $if maid == Just imageAuthor
   ^{renderForm MsgUpdateImageInfo form route (submitI MsgUpdateImageInfo)}

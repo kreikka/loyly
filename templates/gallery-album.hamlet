@@ -2,12 +2,8 @@
 <h1>#{albumTitle}
 ^{flexImagesWidget albumAuthor albumIdent images}
 <p>
-  Laatinut #{albumAuthor} (^{prettyDate albumDate}). #
-  $if isReadableAll albumAccess
-    Albumi on <b>julkinen</b>. #
-  $elseif isReadableMembers albumAccess
-    Albumi on <b>yksityinen</b>. #
-  $else
-    Albumi on tyhjä muille.
+  Albumin on laatinut #
+  <a href=@{PublicProfileR albumAuthor}>#{albumAuthor}#
+  \ (^{prettyDate albumDate}). Albumi on <b>#{prettyPublicity albumAccess}</b>.
 <br>
 ^{uploadWidget $ Just album}
