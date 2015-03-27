@@ -51,7 +51,11 @@ sudo mv $DESTINATION/config/mysettings.yml $DESTINATION/config/settings.yml
 sudo chmod og-rwx $SECRETS
 sudo chown $USER $SECRETS $DESTINATION $DESTINATION/static/{tmp,gallery}
 
+
 # Binary
+
+sudo cp $DESTINATION/loyly $DESTINATION/loyly.old || true # backup the old
+
 sudo systemctl stop loyly || true  # stop if running
 sudo cp dist/build/loyly/loyly $DESTINATION
 sudo systemctl start loyly

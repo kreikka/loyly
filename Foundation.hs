@@ -30,6 +30,7 @@ import Data.Time.Format.Human
 #if DEVELOPMENT
 #else
 import Network.Mail.Mime (Address(..), renderSendMail, simpleMail')
+import qualified Data.Text.Lazy as TL
 #endif
 import System.Locale
 
