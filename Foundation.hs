@@ -30,8 +30,8 @@ import Data.Time.Format.Human
 #if DEVELOPMENT
 #else
 import Network.Mail.Mime (Address(..), renderSendMail, simpleMail')
+import qualified Data.Text.Lazy as TL
 #endif
-import System.Locale
 
 -- | The site argument for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -300,11 +300,11 @@ prettyDate t = do
 finnishLocale :: HumanTimeLocale
 finnishLocale = defaultHumanTimeLocale
     { justNow       = "juuri äsken"
-    , secondsAgo    = (++ " sekuntia sitten")
-    , oneMinuteAgo  = "minuutti sitten"
-    , minutesAgo    = (++ " minuuttia sitten")
-    , oneHourAgo    = "tunti sitten"
-    , aboutHoursAgo = \x -> "noin " ++ x ++ " tuntia sitten"
+    , secondsAgo    = \f -> (++ " sekuntia sitten")
+    , oneMinuteAgo  = \f -> "minuutti sitten"
+    , minutesAgo    = \f -> (++ " minuuttia sitten")
+    , oneHourAgo    = \f -> "tunti sitten"
+    , aboutHoursAgo = \_ x -> "noin " ++ x ++ " tuntia sitten"
     , at            = \n _ -> "viime " ++ (case n of
                                0 -> "sunnuntaina"
                                1 -> "maanantaina"
@@ -315,9 +315,9 @@ finnishLocale = defaultHumanTimeLocale
                                6 -> "lauantaina"
                                7 -> "sunnuntaina"
                                _ -> "EI OLE PÄIVÄ: " ++ show n)
-    , daysAgo      = (++ " päivää sitten")
-    , weekAgo      = (++ " viikko sitten")
-    , weeksAgo     = (++ " viikkoa sitten")
+    , daysAgo      = \f -> (++ " päivää sitten")
+    , weekAgo      = \f -> (++ " viikko sitten")
+    , weeksAgo     = \f -> (++ " viikkoa sitten")
     , onYear       = id
     , locale       = defaultTimeLocale
         { wDays = [("Sunnuntai", "Su"), ("Maanantai", "Ma")

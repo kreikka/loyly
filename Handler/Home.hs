@@ -174,7 +174,7 @@ handleBlogPost (fi, overwrite, editor) = do
         writerOptions = yesodDefaultWriterOptions
             { Pandoc.writerExtensions = Pandoc.pandocExtensions }
 
-        doc@(Pandoc.Pandoc meta _) = Pandoc.readMarkdown readerOptions md_str
+        Right doc@(Pandoc.Pandoc meta _) = Pandoc.readMarkdown readerOptions md_str -- TODO handle left case, it indicates a parse error
         title = T.pack $ concatMap inlineToString (Pandoc.docTitle meta)
 
         post = BlogPost
